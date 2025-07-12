@@ -1,0 +1,4753 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <title>WebCurl</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background-color: #f0f0f0;
+        }
+
+        .container {
+            max-width: 1200px;
+            min-width: 800px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            overflow-x: auto;
+        }
+
+        .request-section {
+            margin-bottom: 20px;
+        }
+
+        .url-section {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        select,
+        input,
+        textarea,
+        button {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        select {
+            width: 100px;
+        }
+
+        input[type="url"] {
+            flex: 1;
+        }
+
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        .loading {
+            position: relative;
+            pointer-events: none;
+        }
+
+        .loading::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 16px;
+            height: 16px;
+            margin: -8px 0 0 -8px;
+            border: 2px solid #ffffff;
+            border-radius: 50%;
+            border-top-color: transparent;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid #ddd;
+            margin-bottom: 15px;
+        }
+
+        .tab {
+            padding: 8px 16px;
+            cursor: pointer;
+            border: 1px solid transparent;
+        }
+
+        .tab.active {
+            border: 1px solid #ddd;
+            border-bottom: none;
+            background-color: white;
+            margin-bottom: -1px;
+        }
+
+        .tab-content {
+            display: none;
+            min-height: 300px;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .header-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+            align-items: center;
+        }
+
+        .header-row input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            margin: 0;
+        }
+
+        .header-row input[type="text"] {
+            flex: 1;
+        }
+
+        .remove-btn {
+            background-color: #f44336;
+        }
+
+        .response-section {
+            margin-top: 20px;
+            border-top: 1px solid #ddd;
+            padding-top: 20px;
+        }
+
+        .response-info {
+            margin-bottom: 15px;
+            padding: 10px;
+            background-color: #f8f8f8;
+        }
+
+        .response-tabs {
+            display: flex;
+            border-bottom: 1px solid #ddd;
+            margin-bottom: 15px;
+        }
+
+        .response-tab {
+            padding: 8px 16px;
+            cursor: pointer;
+            border: 1px solid transparent;
+            margin-right: 5px;
+        }
+
+        .response-tab.active {
+            border: 1px solid #ddd;
+            border-bottom: none;
+            background-color: white;
+            margin-bottom: -1px;
+        }
+
+        .response-tab-content {
+            display: none;
+            padding: 15px 0;
+        }
+
+        .response-tab-content.active {
+            display: block;
+        }
+
+        #responseBody {
+            width: 100%;
+            min-height: 200px;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+
+        .file-input-container {
+            margin-top: 10px;
+        }
+
+        .file-list {
+            margin-top: 10px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .file-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 5px;
+            background: #f5f5f5;
+            margin-bottom: 5px;
+            border-radius: 3px;
+        }
+
+        .headers-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 10px;
+        }
+
+        .headers-table th,
+        .headers-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+
+        .headers-table th {
+            background-color: #f5f5f5;
+        }
+
+        .formdata-type-select {
+            width: 100px;
+            margin-right: 10px;
+        }
+
+        .formdata-input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+            align-items: center;
+        }
+
+        .formdata-list {
+            margin-top: 10px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .formdata-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px;
+            background: #f5f5f5;
+            margin-bottom: 5px;
+            border-radius: 3px;
+        }
+
+        .formdata-item span {
+            flex: 1;
+        }
+
+        .type-badge {
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 12px;
+            margin-left: 8px;
+        }
+
+        .type-file {
+            background-color: #e1f5fe;
+            color: #0277bd;
+        }
+
+        .type-text {
+            background-color: #f1f8e9;
+            color: #558b2f;
+        }
+
+        .formdata-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+            align-items: start;
+            padding: 10px;
+            background: #f9f9f9;
+            border-radius: 4px;
+            width: 100%;
+        }
+
+        .formdata-row input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            margin: 0;
+            margin-top: 10px;
+        }
+
+        .formdata-key {
+            width: 30%;
+            min-width: 200px;
+        }
+
+        .formdata-type {
+            width: 15%;
+            min-width: 120px;
+        }
+
+        .formdata-value {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .formdata-value .text-input {
+            width: 100%;
+            height: 36px;
+        }
+
+        .formdata-value .file-input {
+            width: 100%;
+            height: 36px;
+            padding: 6px;
+            box-sizing: border-box;
+        }
+
+        .formdata-value .file-input::-webkit-file-upload-button {
+            height: 22px;
+            padding: 0 10px;
+            margin-right: 10px;
+            border: 1px solid #ddd;
+            background: #f5f5f5;
+            border-radius: 3px;
+        }
+
+        .file-preview {
+            margin-top: 5px;
+            font-size: 12px;
+            color: #666;
+        }
+
+        .file-preview-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 2px 5px;
+            background: #e3f2fd;
+            border-radius: 3px;
+            margin-bottom: 2px;
+        }
+
+        .add-row-btn {
+            margin-top: 10px;
+            background-color: #2196F3;
+            padding: 8px 16px;
+            font-size: 14px;
+            min-width: 100px;
+            height: 36px;
+        }
+
+        /* 按钮样式优化 */
+        .btn-primary {
+            background-color: #4CAF50;
+        }
+
+        .btn-secondary {
+            background-color: #2196F3;
+        }
+
+        .btn-danger {
+            background-color: #f44336;
+        }
+
+        /* 容器样式 */
+        .container-hidden {
+            display: none;
+        }
+
+        .container-margin-top {
+            margin-top: 10px;
+        }
+
+        /* 输入框样式 */
+        .input-full-width {
+            width: 100%;
+        }
+
+        .input-remark {
+            width: 80px;
+        }
+
+        .input-number {
+            width: 100%;
+        }
+
+        .input-ws-send {
+            width: 60%;
+        }
+
+        /* 表格样式 */
+        .table-col-enable {
+            width: 50px;
+        }
+
+        .table-col-action {
+            width: 80px;
+        }
+
+        /* 文本域样式 */
+        .textarea-body {
+            width: 100%;
+            height: 150px;
+            font-family: monospace;
+            resize: vertical;
+        }
+
+        /* 文件输入框样式 */
+        .file-input-binary {
+            width: 100%;
+            height: 36px;
+            padding: 6px;
+            box-sizing: border-box;
+        }
+
+        .file-input-ws {
+            display: none;
+            width: 180px;
+        }
+
+        /* 选择框样式 */
+        .select-formdata-type {
+            width: 30px;
+        }
+
+        /* 分隔线样式 */
+        .divider {
+            margin: 15px 0;
+        }
+
+        /* 设置输入框样式 */
+        .setting-input {
+            width: 100%;
+        }
+
+        .setting-input-integrity {
+            display: none;
+            width: 100%;
+            margin-top: 5px;
+        }
+
+        /* 集合选择器样式 */
+        .collection-selector {
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* 文件输入框默认隐藏 */
+        .file-input {
+            display: none;
+        }
+
+        /* 表单备注样式 */
+        .form-remark {
+            width: 80px;
+        }
+
+        .body-type-radio {
+            display: inline-flex;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .body-type-radio label {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            cursor: pointer;
+        }
+
+        .body-type-radio input[type="radio"] {
+            cursor: pointer;
+        }
+
+        #bodyTab {
+            position: relative;
+            width: 100%;
+        }
+
+        #formContainer,
+        #formDataContainer {
+            width: 100%;
+        }
+
+        .content-wrapper {
+            display: flex;
+            gap: 10px;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        .aside {
+            width: 30%;
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            max-height: calc(100vh - 40px);
+            overflow-y: scroll;
+        }
+
+        .global-actions {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .global-actions button {
+            flex: 1;
+            padding: 8px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            color: white;
+            font-size: 13px;
+        }
+
+        .global-export-btn {
+            background-color: #4CAF50;
+        }
+
+        .global-import-btn {
+            background-color: #2196F3;
+        }
+
+        .panel-tabs {
+            display: flex;
+            border-bottom: 1px solid #ddd;
+            margin-bottom: 15px;
+        }
+
+        .panel-tab {
+            padding: 10px 15px;
+            cursor: pointer;
+            border: 1px solid transparent;
+            flex: 1;
+            text-align: center;
+        }
+
+        .panel-tab.active {
+            border: 1px solid #ddd;
+            border-bottom: none;
+            background-color: white;
+            margin-bottom: -1px;
+        }
+
+        .panel-content {
+            display: none;
+        }
+
+        .panel-content.active {
+            display: block;
+        }
+
+        .history-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .history-header .btn-group {
+            display: flex;
+            gap: 5px;
+        }
+
+        .export-btn {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 4px 8px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .import-btn {
+            background-color: #2196F3;
+            color: white;
+            border: none;
+            padding: 4px 8px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .clear-history-btn {
+            background-color: #f44336;
+            color: white;
+            border: none;
+            padding: 4px 8px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .clear-history-btn:hover {
+            background-color: #d32f2f;
+        }
+
+        .history-item {
+            padding: 10px;
+            border: 1px solid #eee;
+            border-radius: 4px;
+            margin-bottom: 10px;
+            font-size: 13px;
+            position: relative;
+        }
+
+        .history-item:hover {
+            background-color: #f5f5f5;
+        }
+
+        .history-method {
+            font-weight: bold;
+            color: #2196F3;
+            margin-right: 8px;
+        }
+
+        .history-url {
+            color: #666;
+            word-break: break-all;
+            margin-bottom: 5px;
+        }
+
+        .history-time {
+            font-size: 12px;
+            color: #999;
+            margin-bottom: 5px;
+        }
+
+        .history-load-btn {
+            background-color: #4CAF50;
+            padding: 4px 8px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 12px;
+            height: 24px;
+            color: white;
+            margin: 2px;
+        }
+
+        .main-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .settings-dialog {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .dialog-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+        }
+
+        .settings-dialog h3 {
+            margin-bottom: 15px;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 10px;
+        }
+
+        .settings-group {
+            margin-bottom: 15px;
+        }
+
+        .settings-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        .settings-group select {
+            width: 100%;
+            margin-bottom: 10px;
+        }
+
+        .dialog-buttons {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .settings-btn {
+            background-color: #2196F3;
+            margin-right: 10px;
+        }
+
+        .save-api-btn {
+            background-color: #FFA000;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+
+        .save-api-btn:hover {
+            background-color: #F57C00;
+        }
+
+        .api-name {
+            font-weight: bold;
+            color: #1976D2;
+            margin-bottom: 5px;
+        }
+
+        .history-item button {
+            padding: 4px 8px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 12px;
+            height: 24px;
+            color: white;
+            margin: 2px;
+        }
+
+        .history-item .history-load-btn {
+            background-color: #4CAF50;
+        }
+
+        .history-item .remove-btn {
+            background-color: #f44336;
+        }
+
+        .variables-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 10px;
+        }
+
+        .variables-table th,
+        .variables-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+
+        .variables-table th {
+            background-color: #f5f5f5;
+        }
+
+        .variables-table input[type="text"] {
+            width: 100%;
+            padding: 6px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .variables-table input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+        }
+
+        .variables-table .remove-btn {
+            padding: 4px 8px;
+            background-color: #f44336;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+
+        .variables-table .remove-btn:hover {
+            background-color: #d32f2f;
+        }
+
+        /* 多行请求体样式 */
+        .body-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+            align-items: start;
+            padding: 10px;
+            background: #f9f9f9;
+            border-radius: 4px;
+            width: 100%;
+        }
+
+        .body-row input[type="radio"] {
+            width: 16px;
+            height: 16px;
+            margin: 0;
+            margin-top: 10px;
+        }
+
+        .body-content {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .body-content textarea {
+            width: 100%;
+            height: 150px;
+            font-family: monospace;
+            resize: vertical;
+        }
+
+        .body-content input[type="file"] {
+            width: 100%;
+            height: 36px;
+            padding: 6px;
+            box-sizing: border-box;
+        }
+
+        .body-remark {
+            width: 120px;
+            min-width: 120px;
+            height: 150px;
+            resize: vertical;
+            font-family: monospace;
+        }
+
+        .body-actions {
+            display: flex;
+            gap: 5px;
+            margin-top: 10px;
+        }
+
+        .body-actions button {
+            padding: 4px 8px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 12px;
+            color: white;
+        }
+
+        .body-actions .remove-btn {
+            background-color: #f44336;
+        }
+
+        /* JSON格式化高亮样式 */
+        .json-formatted {
+            background: #f5f5f5;
+            color: #222;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: monospace;
+            white-space: pre;
+            border: 1px solid #ddd;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .json-formatted .json-key {
+            color: #1a7ab6;
+        }
+
+        .json-formatted .json-string {
+            color: #c41a16;
+        }
+
+        .json-formatted .json-number {
+            color: #1c00cf;
+        }
+
+        .json-formatted .json-boolean,
+        .json-formatted .json-null {
+            color: #aa0d91;
+        }
+
+        .json-formatted .json-bracket {
+            color: #888;
+        }
+
+        .json-formatted .json-arrow {
+            cursor: pointer;
+            user-select: none;
+            color: #888;
+            margin-right: 4px;
+        }
+
+        .json-formatted .json-container {
+            margin-left: 20px;
+        }
+
+        .json-actions {
+            margin-top: 10px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .json-actions button {
+            padding: 4px 8px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 12px;
+            color: white;
+            background-color: #4CAF50;
+        }
+
+        .json-actions button:hover {
+            background-color: #45a049;
+        }
+
+        #wsBodyContainer {
+            width: 100%;
+        }
+
+        #wsBodyRows .body-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+            width: 100%;
+        }
+
+        #wsBodyRows .body-row input[type="radio"] {
+            width: 18px;
+        }
+
+        #wsBodyRows .ws-body-type {
+            min-width: 180px;
+            max-width: 200px;
+        }
+
+        #wsBodyRows .ws-body-content {
+            flex: 1;
+            width: 100%;
+        }
+
+        #wsBodyRows .ws-body-text {
+            width: 100%;
+            min-height: 36px;
+            resize: vertical;
+        }
+
+        #wsBodyRows .ws-body-file {
+            width: 100%;
+        }
+
+        #wsBodyRows .body-remark {
+            min-width: 120px;
+            max-width: 200px;
+            flex: 0 0 160px;
+            height: 36px;
+            resize: vertical;
+        }
+
+        #wsBodyRows .remove-btn {
+            min-width: 60px;
+        }
+
+        #wsBodyContainer .ws-body-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        select option {
+            min-height: 32px;
+            padding: 8px 10px;
+            font-size: 15px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="content-wrapper">
+        <div class="aside">
+            <div class="global-actions">
+                <button class="global-export-btn" onclick="exportAllConfig()">导出全部配置</button>
+                <button class="global-import-btn" onclick="importAllConfig()">导入全部配置</button>
+                <button class="settings-btn" onclick="openSettings()">请求配置</button>
+                <button class="settings-btn" onclick="window.open('/tool.html')">常用工具</button>
+            </div>
+            <div class="panel-tabs">
+                <div class="panel-tab active" onclick="switchPanelTab('history')">历史</div>
+                <div class="panel-tab" onclick="switchPanelTab('apis')">接口</div>
+                <div class="panel-tab" onclick="switchPanelTab('variables')">变量</div>
+                <div class="panel-tab" onclick="switchPanelTab('globalHeaders')">全局头</div>
+            </div>
+            <div id="historyPanel" class="panel-content active">
+                <div class="history-header">
+                    <div class="btn-group">
+                        <button class="clear-history-btn" onclick="clearHistory()">清空历史</button>
+                        <button class="import-btn" onclick="importHistory()">导入历史</button>
+                        <button class="export-btn" onclick="exportHistory()">导出历史</button>
+                    </div>
+                </div>
+                <div id="historyList"></div>
+            </div>
+            <div id="apisPanel" class="panel-content">
+                <div class="history-header">
+                    <div class="btn-group">
+                        <button class="clear-history-btn" onclick="clearApis()">清空列表</button>
+                        <button class="import-btn" onclick="importApis()">导入接口</button>
+                        <button class="export-btn" onclick="exportApis()">导出接口</button>
+                    </div>
+                </div>
+                <!-- 集合管理UI -->
+                <div class="collection-selector">
+                    <label>集合：</label>
+                    <select id="apiCollectionSelect" onchange="switchApiCollection()"></select>
+                    <button onclick="addApiCollection()">新增集合</button>
+                    <button onclick="removeApiCollection()">删除集合</button>
+                </div>
+                <div id="apisList"></div>
+            </div>
+            <div id="variablesPanel" class="panel-content">
+                <div class="history-header">
+                    <div class="btn-group">
+                        <button class="clear-history-btn" onclick="clearVariables()">清空变量</button>
+                        <button class="import-btn" onclick="importVariables()">导入变量</button>
+                        <button class="export-btn" onclick="exportVariables()">导出变量</button>
+                    </div>
+                </div>
+                <div class="variables-table-container">
+                    <table class="variables-table">
+                        <thead>
+                            <tr>
+                                <th class="table-col-enable">启用</th>
+                                <th>变量名</th>
+                                <th>变量值</th>
+                                <th class="table-col-action">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="variablesTableBody"></tbody>
+                    </table>
+                    <button class="add-row-btn" onclick="addVariableRow()">添加变量</button>
+                    <button class="save-btn btn-primary" onclick="saveVariables()">保存变量</button>
+                </div>
+            </div>
+            <div id="globalHeadersPanel" class="panel-content">
+                <div class="history-header">
+                    <div class="btn-group">
+                        <button class="clear-history-btn" onclick="clearGlobalHeaders()">清空全局头</button>
+                        <button class="import-btn" onclick="importGlobalHeaders()">导入全局头</button>
+                        <button class="export-btn" onclick="exportGlobalHeaders()">导出全局头</button>
+                    </div>
+                </div>
+                <div class="variables-table-container">
+                    <table class="variables-table">
+                        <thead>
+                            <tr>
+                                <th class="table-col-enable">启用</th>
+                                <th>请求头</th>
+                                <th>请求值</th>
+                                <th class="table-col-action">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="globalHeadersTableBody"></tbody>
+                    </table>
+                    <button class="add-row-btn" onclick="addGlobalHeaderRow()">添加全局头</button>
+                    <button class="save-btn btn-primary" onclick="saveGlobalHeaders()">保存全局头</button>
+                </div>
+            </div>
+        </div>
+        <div class="main-content">
+            <div class="container">
+                <div class="request-section">
+                    <div class="url-section">
+                        <button class="new-request-btn" onclick="newRequest()">新建</button>
+                        <select id="httpMethod">
+                            <option>GET</option>
+                            <option>POST</option>
+                            <option>PUT</option>
+                            <option>DELETE</option>
+                            <option>PATCH</option>
+                            <option>HEAD</option>
+                            <option>OPTIONS</option>
+                            <option>CONNECT</option>
+                            <option>TRACE</option>
+                            <option>WS</option>
+                            <option>SSE</option>
+                        </select>
+                        <input type="url" id="url" placeholder="输入请求URL" value="" />
+                        <button onclick="saveToApis()" class="btn-secondary">保存</button>
+                        <button id="downloadBtn" onclick="sendRequestAndDownload()" class="btn-secondary">下载</button>
+                        <button id="sendBtn" onclick="sendRequest()">发送请求</button>
+                    </div>
+
+                    <div class="tabs">
+                        <div class="tab active" onclick="switchTab('headers')">请求头</div>
+                        <div class="tab" onclick="switchTab('body')">请求体</div>
+                    </div>
+
+                    <div id="headersTab" class="tab-content active">
+                        <div id="headersList">
+                            <div class="header-row">
+                                <input type="checkbox" checked>
+                                <input type="text" placeholder="Header名称" />
+                                <input type="text" placeholder="Header值" />
+                                <input type="text" placeholder="备注" class="header-remark input-remark" />
+                                <button class="remove-btn" onclick="removeHeader(this)">删除</button>
+                            </div>
+                        </div>
+                        <button onclick="addHeader()">添加请求头</button>
+                    </div>
+
+                    <div id="bodyTab" class="tab-content">
+                        <div class="body-type-radio">
+                            <label>
+                                <input type="radio" name="bodyType" value="none" checked
+                                    onchange="updateBodyType(this.value)">
+                                <span>无请求体</span>
+                            </label>
+                            <label>
+                                <input type="radio" name="bodyType" value="json" onchange="updateBodyType(this.value)">
+                                <span>JSON</span>
+                            </label>
+                            <label>
+                                <input type="radio" name="bodyType" value="text" onchange="updateBodyType(this.value)">
+                                <span>Text</span>
+                            </label>
+                            <label>
+                                <input type="radio" name="bodyType" value="binary"
+                                    onchange="updateBodyType(this.value)">
+                                <span>Binary</span>
+                            </label>
+                            <label>
+                                <input type="radio" name="bodyType" value="form" onchange="updateBodyType(this.value)">
+                                <span>application/x-www-form-urlencoded</span>
+                            </label>
+                            <label>
+                                <input type="radio" name="bodyType" value="formdata"
+                                    onchange="updateBodyType(this.value)">
+                                <span>form-data</span>
+                            </label>
+                            <label>
+                                <input type="radio" name="bodyType" value="websocket"
+                                    onchange="updateBodyType(this.value)">
+                                <span>WebSocket</span>
+                            </label>
+                        </div>
+                        <div id="jsonBodyContainer" class="container-hidden">
+                            <div id="jsonBodyRows"></div>
+                            <div class="body-actions">
+                                <button class="add-row-btn" onclick="addJsonBodyRow()">添加JSON行</button>
+                            </div>
+                        </div>
+                        <div id="textBodyContainer" class="container-hidden">
+                            <div id="textBodyRows"></div>
+                            <div class="body-actions">
+                                <button class="add-row-btn" onclick="addTextBodyRow()">添加Text行</button>
+                            </div>
+                        </div>
+                        <div id="binaryBodyContainer" class="container-hidden">
+                            <div id="binaryBodyRows"></div>
+                            <div class="body-actions">
+                                <button class="add-row-btn" onclick="addBinaryBodyRow()">添加Binary行</button>
+                            </div>
+                        </div>
+                        <div id="formDataContainer" class="file-input-container container-hidden">
+                            <div id="formDataRows"></div>
+                            <button class="add-row-btn" onclick="addFormDataRow()">添加新行</button>
+                        </div>
+                        <div id="formContainer" class="container-hidden container-margin-top">
+                            <div id="formRows"></div>
+                            <button onclick="addFormRow()" class="add-row-btn">添加表单项</button>
+                        </div>
+                        <div id="wsControls" class="container-hidden container-margin-top">
+                            <input type="text" id="wsSendInput" placeholder="输入要发送的消息" class="input-ws-send">
+                            <button id="wsSendBtn" class="add-row-btn">发送</button>
+                            <button id="wsCloseBtn" class="add-row-btn">关闭连接</button>
+                        </div>
+                        <div id="wsBodyContainer" class="container-hidden container-margin-top">
+                            <div id="wsBodyRows"></div>
+                            <div class="ws-body-actions">
+                                <button class="add-row-btn" onclick="addWsBodyRow()" type="button">添加行</button>
+                                <button class="add-row-btn" onclick="if (currentWS) currentWS.close();"
+                                    type="button">断开连接</button>
+                                <button class="add-row-btn" onclick="sendWsBody()" type="button">发送</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="response-section">
+                    <div class="response-info" id="responseInfo"></div>
+                    <div class="response-tabs">
+                        <div class="response-tab active" onclick="switchResponseTab('headers')">响应头</div>
+                        <div class="response-tab" onclick="switchResponseTab('body')">响应体</div>
+                    </div>
+                    <div id="headersContent" class="response-tab-content active">
+                        <table class="headers-table" id="responseHeaders">
+                            <thead>
+                                <tr>
+                                    <th>名称</th>
+                                    <th>值</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                    <div id="bodyContent" class="response-tab-content">
+                        <div class="response-actions">
+                            <button onclick="copyResponse()">复制响应内容</button>
+                            <button onclick="clearResponse()">清空响应内容</button>
+                            <button id="formatJsonBtn" onclick="formatJsonResponse()"
+                                class="container-hidden">格式化JSON</button>
+                            <button id="copyFormattedBtn" onclick="copyFormattedJson()"
+                                class="container-hidden">复制格式化JSON</button>
+                        </div>
+                        <div id="jsonFormattedContainer" class="container-hidden"></div>
+                        <textarea id="responseBody" readonly></textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="dialog-overlay" id="dialogOverlay"></div>
+    <div class="settings-dialog" id="settingsDialog">
+        <h3>请求配置</h3>
+        <div class="settings-group">
+            <!-- 新增5个配置项 -->
+            <label>是否验证SSL (verify_ssl)</label>
+            <select id="settingVerifySSL">
+                <option value="Y">Y - 验证SSL</option>
+                <option value="N">N - 不验证SSL</option>
+            </select>
+
+            <label>是否自动跟随重定向 (follow_redirect)</label>
+            <select id="settingFollowRedirect">
+                <option value="Y">Y - 自动跟随</option>
+                <option value="N">N - 不跟随</option>
+            </select>
+
+            <label>请求超时时间 (秒, time_out)</label>
+            <input type="number" id="settingTimeout" min="0" placeholder="0为不超时" class="setting-input">
+
+            <label>请求重试次数 (retry_count)</label>
+            <input type="number" id="settingRetryCount" min="0" placeholder="0为不重试" class="setting-input">
+
+            <label>请求重试间隔 (秒, retry_delay)</label>
+            <input type="number" id="settingRetryDelay" min="0" placeholder="0为无间隔" class="setting-input">
+
+            <label>SSE事件类型列表 (逗号分隔)</label>
+            <input type="text" id="settingSseEventTypes" placeholder="例如: update,info,warn" class="setting-input">
+
+            <hr class="divider">
+
+            <label>缓存策略 (cache)</label>
+            <select id="settingCache">
+                <option value="default">default - 默认，先在缓存里面寻找匹配的请求</option>
+                <option value="no-store">no-store - 直接请求远程服务器，不更新缓存</option>
+                <option value="reload">reload - 直接请求远程服务器，更新缓存</option>
+                <option value="no-cache">no-cache - 将服务器资源跟本地缓存进行比较</option>
+                <option value="force-cache">force-cache - 缓存优先</option>
+                <option value="only-if-cached">only-if-cached - 只检查缓存</option>
+            </select>
+
+            <label>请求模式 (mode)</label>
+            <select id="settingMode">
+                <option value="cors">cors - 允许跨域请求</option>
+                <option value="same-origin">same-origin - 只允许同源请求</option>
+                <option value="no-cors">no-cors - 仅限简单请求方法和标头</option>
+                <option value="navigate">navigate - navigate</option>
+            </select>
+
+            <label>发送凭证 (credentials)</label>
+            <select id="settingCredentials">
+                <option value="same-origin">same-origin - 同源发送Cookie</option>
+                <option value="include">include - 同源和跨域都发送Cookie</option>
+                <option value="omit">omit - 不发送Cookie</option>
+            </select>
+
+            <label>重定向处理 (redirect)</label>
+            <select id="settingRedirect">
+                <option value="follow">follow - 自动跟随跳转</option>
+                <option value="error">error - 跳转时报错</option>
+                <option value="manual">manual - 手动处理跳转</option>
+            </select>
+
+            <label>Referrer 策略 (referrerPolicy)</label>
+            <select id="settingReferrerPolicy">
+                <option value="no-referrer-when-downgrade">no-referrer-when-downgrade - 默认规则</option>
+                <option value="no-referrer">no-referrer - 不发送Referrer</option>
+                <option value="origin">origin - 只发送域名</option>
+                <option value="origin-when-cross-origin">origin-when-cross-origin - 跨域时只发送域名</option>
+                <option value="same-origin">same-origin - 仅同源发送</option>
+                <option value="strict-origin">strict-origin - 安全降级时不发送</option>
+                <option value="strict-origin-when-cross-origin">strict-origin-when-cross-origin - 安全跨域规则</option>
+                <option value="unsafe-url">unsafe-url - 总是发送完整URL</option>
+            </select>
+
+            <label>Referrer</label>
+            <select id="settingReferrer">
+                <option value="about:client">about:client - 默认行为</option>
+                <option value="">空 - 不发送referrer</option>
+                <option value="custom">自定义</option>
+            </select>
+            <input type="text" id="settingReferrerCustom" placeholder="自定义referrer URL" class="setting-input-integrity">
+
+            <label>完整性校验 (integrity)</label>
+            <input type="text" id="settingIntegrity" placeholder="输入哈希值" class="setting-input">
+
+            <label>保持连接 (keepalive)</label>
+            <select id="settingKeepalive">
+                <option value="false">false - 默认</option>
+                <option value="true">true - 保持连接</option>
+            </select>
+        </div>
+        <div class="dialog-buttons">
+            <button onclick="closeSettings()">取消</button>
+            <button onclick="saveSettings()" class="btn-primary">保存配置</button>
+        </div>
+    </div>
+
+    <script>
+        /**
+         * 全局变量：是否使用代理模式
+         * @type {boolean}
+         */
+        let useProxy = false;
+
+        /**
+         * 初始化代理模式状态
+         * 页面加载时请求 /api/mode 接口获取当前运行模式
+         * @returns {Promise<void>}
+         */
+        async function initUseProxy() {
+            try {
+                const modeResp = await fetch('/api/mode');
+                if (modeResp.ok) {
+                    const modeData = await modeResp.json();
+                    if (modeData && modeData.mode === 'proxy') {
+                        useProxy = true;
+                    } else {
+                        useProxy = false;
+                    }
+                } else {
+                    useProxy = false;
+                }
+            } catch (e) {
+                useProxy = false;
+            }
+        }
+
+        /**
+         * 切换请求标签页
+         * @param {string} tabName - 标签页名称，可选值：'headers' 或 'body'
+         */
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+
+            const selectedTab = document.querySelector(`.tab:nth-child(${tabName === 'headers' ? '1' : '2'})`);
+            const selectedContent = document.getElementById(`${tabName}Tab`);
+
+            selectedTab.classList.add('active');
+            selectedContent.classList.add('active');
+        }
+
+        /**
+         * 添加请求头行
+         * 在请求头列表中添加一个新的请求头输入行
+         */
+        function addHeader() {
+            const headerRow = document.createElement('div');
+            headerRow.className = 'header-row';
+            headerRow.innerHTML = `
+                <input type="checkbox" checked>
+                <input type="text" placeholder="Header名称"/>
+                <input type="text" placeholder="Header值"/>
+                <input type="text" placeholder="备注" class="header-remark input-remark"/>
+                <button class="remove-btn" onclick="removeHeader(this)">删除</button>
+            `;
+            document.getElementById('headersList').appendChild(headerRow);
+        }
+
+        /**
+         * 删除请求头行
+         * @param {HTMLElement} button - 删除按钮元素
+         */
+        function removeHeader(button) {
+            button.parentElement.remove();
+        }
+
+        /**
+         * 更新请求体类型
+         * 根据选择的请求体类型显示对应的容器，隐藏其他容器
+         * @param {string} type - 请求体类型，可选值：'none', 'json', 'text', 'binary', 'form', 'formdata', 'websocket'
+         */
+        function updateBodyType(type) {
+            const jsonBodyContainer = document.getElementById('jsonBodyContainer');
+            const textBodyContainer = document.getElementById('textBodyContainer');
+            const binaryBodyContainer = document.getElementById('binaryBodyContainer');
+            const formDataContainer = document.getElementById('formDataContainer');
+            const formContainer = document.getElementById('formContainer');
+            const wsControls = document.getElementById('wsControls');
+            const wsBodyContainer = document.getElementById('wsBodyContainer');
+
+            // 隐藏所有容器
+            jsonBodyContainer.style.display = 'none';
+            textBodyContainer.style.display = 'none';
+            binaryBodyContainer.style.display = 'none';
+            formDataContainer.style.display = 'none';
+            formContainer.style.display = 'none';
+            wsControls.style.display = 'none';
+            wsBodyContainer.style.display = 'none';
+
+            switch (type) {
+                case 'json':
+                    jsonBodyContainer.style.display = 'block';
+                    // 如果没有行，添加一个默认行
+                    if (document.getElementById('jsonBodyRows').children.length === 0) {
+                        addJsonBodyRow();
+                    }
+                    break;
+                case 'text':
+                    textBodyContainer.style.display = 'block';
+                    // 如果没有行，添加一个默认行
+                    if (document.getElementById('textBodyRows').children.length === 0) {
+                        addTextBodyRow();
+                    }
+                    break;
+                case 'binary':
+                    binaryBodyContainer.style.display = 'block';
+                    // 如果没有行，添加一个默认行
+                    if (document.getElementById('binaryBodyRows').children.length === 0) {
+                        addBinaryBodyRow();
+                    }
+                    break;
+                case 'form':
+                    formContainer.style.display = 'block';
+                    break;
+                case 'formdata':
+                    formDataContainer.style.display = 'block';
+                    break;
+                case 'websocket':
+                    wsBodyContainer.style.display = 'block';
+                    if (document.getElementById('wsBodyRows').children.length === 0) {
+                        addWsBodyRow();
+                    }
+                    break;
+                case 'none':
+                default:
+                    // 无请求体，所有容器都隐藏
+                    break;
+            }
+        }
+
+        /**
+         * 处理FormData文件输入变化
+         * 为FormData文件输入框提供文件预览功能
+         * @param {Event} e - 文件输入变化事件
+         */
+        function handleFormDataFileChange(e) {
+            const filePreview = e.target.nextElementSibling;
+            filePreview.innerHTML = '';
+            for (let file of e.target.files) {
+                const item = document.createElement('div');
+                item.className = 'file-preview-item';
+                item.innerHTML = `
+                    <span>${file.name}</span>
+                    <small>(${(file.size / 1024).toFixed(2)} KB)</small>
+                `;
+                filePreview.appendChild(item);
+            }
+        }
+
+        /**
+         * 处理Binary请求体文件输入变化
+         * 为Binary请求体文件输入框提供文件预览功能
+         * @param {Event} e - 文件输入变化事件
+         */
+        function handleBinaryFileChange(e) {
+            const file = e.target.files[0];
+            const filePreview = e.target.nextElementSibling;
+            if (file) {
+                filePreview.innerHTML = `
+                    <div class="file-preview-item">
+                        <span>${file.name}</span>
+                        <small>(${(file.size / 1024).toFixed(2)} KB)</small>
+                    </div>
+                `;
+            } else {
+                filePreview.innerHTML = '';
+            }
+        }
+
+        /**
+         * 创建JSON请求体行
+         * 创建一个包含radio选择、textarea输入、备注和删除按钮的JSON请求体行
+         * @returns {HTMLElement} 创建的JSON请求体行元素
+         */
+        function createJsonBodyRow() {
+            const row = document.createElement('div');
+            row.className = 'body-row';
+            row.innerHTML = `
+                <input type="radio" name="jsonBodyRadio">
+                <div class="body-content">
+                    <textarea placeholder="{}" class="textarea-body"></textarea>
+                </div>
+                <textarea placeholder="备注" class="body-remark"></textarea>
+                <button class="remove-btn" onclick="removeBodyRow(this, 'json')">删除</button>
+            `;
+            return row;
+        }
+
+        /**
+         * 创建Text请求体行
+         * 创建一个包含radio选择、textarea输入、备注和删除按钮的Text请求体行
+         * @returns {HTMLElement} 创建的Text请求体行元素
+         */
+        function createTextBodyRow() {
+            const row = document.createElement('div');
+            row.className = 'body-row';
+            row.innerHTML = `
+                <input type="radio" name="textBodyRadio">
+                <div class="body-content">
+                    <textarea placeholder="text" class="textarea-body"></textarea>
+                </div>
+                <textarea placeholder="备注" class="body-remark"></textarea>
+                <button class="remove-btn" onclick="removeBodyRow(this, 'text')">删除</button>
+            `;
+            return row;
+        }
+
+        /**
+         * 创建Binary请求体行
+         * 创建一个包含radio选择、文件输入、备注和删除按钮的Binary请求体行
+         * @returns {HTMLElement} 创建的Binary请求体行元素
+         */
+        function createBinaryBodyRow() {
+            const row = document.createElement('div');
+            row.className = 'body-row';
+            row.innerHTML = `
+                <input type="radio" name="binaryBodyRadio">
+                <div class="body-content">
+                    <input type="file" class="file-input-binary" onchange="handleBinaryFileChange(event)">
+                    <div class="file-preview"></div>
+                </div>
+                <input type="text" placeholder="备注" class="body-remark">
+                <button class="remove-btn" onclick="removeBodyRow(this, 'binary')">删除</button>
+            `;
+            return row;
+        }
+
+        /**
+         * 添加JSON请求体行
+         * 在JSON请求体容器中添加一个新的JSON请求体行，如果是第一行则自动选中
+         */
+        function addJsonBodyRow() {
+            const container = document.getElementById('jsonBodyRows');
+            const row = createJsonBodyRow();
+            container.appendChild(row);
+            // 如果是第一行，自动选中
+            if (container.children.length === 1) {
+                row.querySelector('input[type="radio"]').checked = true;
+            }
+        }
+
+        /**
+         * 添加Text请求体行
+         * 在Text请求体容器中添加一个新的Text请求体行，如果是第一行则自动选中
+         */
+        function addTextBodyRow() {
+            const container = document.getElementById('textBodyRows');
+            const row = createTextBodyRow();
+            container.appendChild(row);
+            // 如果是第一行，自动选中
+            if (container.children.length === 1) {
+                row.querySelector('input[type="radio"]').checked = true;
+            }
+        }
+
+        /**
+         * 添加Binary请求体行
+         * 在Binary请求体容器中添加一个新的Binary请求体行，如果是第一行则自动选中
+         */
+        function addBinaryBodyRow() {
+            const container = document.getElementById('binaryBodyRows');
+            const row = createBinaryBodyRow();
+            container.appendChild(row);
+            // 如果是第一行，自动选中
+            if (container.children.length === 1) {
+                row.querySelector('input[type="radio"]').checked = true;
+            }
+        }
+
+        /**
+         * 删除请求体行
+         * 删除指定的请求体行，如果删除的是选中的行且还有其他行，则选中第一行
+         * 如果没有行了，则添加一个默认行
+         * @param {HTMLElement} button - 删除按钮元素
+         * @param {string} type - 请求体类型，用于确定添加哪种类型的默认行
+         */
+        function removeBodyRow(button, type) {
+            const row = button.closest('.body-row');
+            const container = row.parentElement;
+            const wasSelected = row.querySelector('input[type="radio"]').checked;
+
+            row.remove();
+
+            // 如果删除的是选中的行，且还有其他行，则选中第一行
+            if (wasSelected && container.children.length > 0) {
+                container.children[0].querySelector('input[type="radio"]').checked = true;
+            }
+
+            // 如果没有行了，添加一个默认行
+            if (container.children.length === 0) {
+                switch (type) {
+                    case 'json':
+                        addJsonBodyRow();
+                        break;
+                    case 'text':
+                        addTextBodyRow();
+                        break;
+                    case 'binary':
+                        addBinaryBodyRow();
+                        break;
+                }
+            }
+        }
+
+        /**
+         * 创建FormData行
+         * 创建一个包含复选框、参数名、类型选择、值输入、备注和删除按钮的FormData行
+         * @returns {HTMLElement} 创建的FormData行元素
+         */
+        function createFormDataRow() {
+            const row = document.createElement('div');
+            row.className = 'formdata-row';
+            row.innerHTML = `
+                <input type="checkbox" checked>
+                <input type="text" class="formdata-key" placeholder="参数名称">
+                <select class="formdata-type select-formdata-type" onchange="handleTypeChange(this)">
+                    <option value="text">文本</option>
+                    <option value="file">文件</option>
+                </select>
+                <div class="formdata-value">
+                    <input type="text" class="text-input" placeholder="文本值">
+                    <input type="file" class="file-input" multiple onchange="handleFormDataFileChange(event)">
+                    <div class="file-preview"></div>
+                </div>
+                <input type="text" placeholder="备注" class="formdata-remark"/>
+                <button class="remove-btn" onclick="removeFormDataRow(this)">删除</button>
+            `;
+            return row;
+        }
+
+        /**
+         * 添加FormData行
+         * 在FormData容器中添加一个新的FormData行
+         */
+        function addFormDataRow() {
+            const container = document.getElementById('formDataRows');
+            const row = createFormDataRow();
+            container.appendChild(row);
+        }
+
+        /**
+         * 删除FormData行
+         * @param {HTMLElement} button - 删除按钮元素
+         */
+        function removeFormDataRow(button) {
+            button.closest('.formdata-row').remove();
+        }
+
+        /**
+         * 处理FormData类型变化
+         * 根据选择的类型（文本/文件）显示对应的输入控件
+         * @param {HTMLSelectElement} select - 类型选择下拉框元素
+         */
+        function handleTypeChange(select) {
+            const row = select.closest('.formdata-row');
+            const textInput = row.querySelector('.text-input');
+            const fileInput = row.querySelector('.file-input');
+            const filePreview = row.querySelector('.file-preview');
+
+            if (select.value === 'text') {
+                textInput.style.display = 'block';
+                fileInput.style.display = 'none';
+                filePreview.style.display = 'none';
+                fileInput.value = ''; // 清除已选文件
+            } else {
+                textInput.style.display = 'none';
+                fileInput.style.display = 'block';
+                filePreview.style.display = 'block';
+            }
+        }
+
+        /**
+         * 添加表单行
+         * 在表单容器中添加一个新的表单参数行
+         */
+        function addFormRow() {
+            const formRow = document.createElement('div');
+            formRow.className = 'header-row';
+            formRow.innerHTML = `
+                <input type="checkbox" checked>
+                <input type="text" placeholder="参数名称"/>
+                <input type="text" placeholder="参数值"/>
+                <input type="text" placeholder="备注" class="form-remark input-remark"/>
+                <button class="remove-btn" onclick="removeFormRow(this)">删除</button>
+            `;
+            document.getElementById('formRows').appendChild(formRow);
+        }
+
+        /**
+         * 删除表单行
+         * @param {HTMLElement} button - 删除按钮元素
+         */
+        function removeFormRow(button) {
+            button.closest('.header-row').remove();
+        }
+
+        /**
+         * 获取当前选择的请求体类型
+         * @returns {string} 请求体类型，如果没有选择则返回 'none'
+         */
+        function getBodyType() {
+            const checkedRadio = document.querySelector('input[name="bodyType"]:checked');
+            return checkedRadio ? checkedRadio.value : 'none';
+        }
+
+        /**
+         * 构建请求头
+         * 获取并处理用户自定义请求头和全局请求头
+         * @returns {Promise<Object>} 处理后的请求头对象
+         */
+        async function buildRequestHeaders() {
+            // 获取用户自定义请求头
+            const customHeaders = {};
+            document.querySelectorAll('#headersList .header-row').forEach(row => {
+                const inputs = row.getElementsByTagName('input');
+                const isEnabled = inputs[0]?.checked;
+                const key = inputs[1]?.value;
+                const value = inputs[2]?.value;
+
+                if (isEnabled && key) {
+                    // 替换header的key和value中的变量
+                    const normalizedKey = replaceVariables(key)?.trim();
+                    const normalizedValue = replaceVariables(value || '')?.trim();
+
+                    // 验证header名称
+                    if (normalizedKey) {
+                        if (!/^[a-zA-Z0-9\-]+$/.test(normalizedKey)) {
+                            throw new Error(`无效的请求头名称: ${normalizedKey}`);
+                        }
+
+                        // 规范化header名称（首字母大写，其余小写）
+                        const finalKey = normalizedKey.split('-').map(part =>
+                            part.charAt(0).toUpperCase() + part.slice(1).toLowerCase()
+                        ).join('-');
+                        customHeaders[finalKey] = normalizedValue;
+                    }
+                }
+            });
+
+            // 获取全局请求头并规范化
+            const globalHeaders = {};
+            const rawGlobalHeaders = getGlobalHeaders();
+            for (const [key, value] of Object.entries(rawGlobalHeaders)) {
+                if (key) {
+                    const normalizedKey = key.split('-').map(part =>
+                        part.charAt(0).toUpperCase() + part.slice(1).toLowerCase()
+                    ).join('-');
+                    globalHeaders[normalizedKey] = value;
+                }
+            }
+
+            // 合并请求头，用户自定义的优先级更高
+            const headers = { ...globalHeaders, ...customHeaders };
+
+            // 验证所有请求头名称
+            for (const key of Object.keys(headers)) {
+                if (key && !/^[a-zA-Z0-9\-]+$/.test(key)) {
+                    throw new Error(`无效的请求头名称: ${key}`);
+                }
+            }
+
+            return headers;
+        }
+
+        /**
+         * 处理代理请求
+         * 构建FormData并发送到代理服务器
+         * @param {string} url - 目标URL
+         * @param {string} method - 请求方法
+         * @param {string} bodyType - 请求体类型
+         * @param {Object} headers - 请求头
+         * @param {Object} settings - 请求设置
+         * @param {boolean} download - 是否为下载请求
+         * @returns {Promise<void>}
+         */
+        async function handleProxyRequest(url, method, bodyType, headers, settings, download) {
+            const formData = new FormData();
+            formData.append('url', url);
+            formData.append('method', method);
+            formData.append('body_type', bodyType === 'formdata' ? 'form-data' : (bodyType === 'form' ? 'x-www-form-urlencoded' : bodyType));
+
+            const headersArr = Object.entries(headers).map(([name, value]) => ({ name, value }));
+            formData.append('headers', JSON.stringify(headersArr));
+            formData.append('time_out', settings.timeout || '0');
+            formData.append('verify_ssl', settings.verify_ssl || 'N');
+            formData.append('follow_redirect', settings.follow_redirect || 'N');
+            formData.append('retry_count', settings.retry_count || '0');
+            formData.append('retry_delay', settings.retry_delay || '0');
+
+            // 处理body和文件
+            const filesInfo = [];
+            await processRequestBody(formData, bodyType, filesInfo);
+
+            if (filesInfo.length > 0) {
+                formData.append('file_info', JSON.stringify(filesInfo));
+            }
+
+            try {
+                const startTime = Date.now();
+                const response = await fetch('/api/forward', {
+                    method: 'POST',
+                    body: formData
+                });
+                const duration = Date.now() - startTime;
+                const contentType = response.headers.get('content-type');
+
+                // SSE流式处理
+                if (contentType?.includes('text/event-stream')) {
+                    await handleSSEFetchResponse(response);
+                    saveRequestToHistory();
+                    return;
+                }
+
+                if (download) {
+                    await handleDownloadResponse(response, contentType);
+                } else {
+                    await handleNormalResponse(response, duration, contentType);
+                }
+
+                await updateResponseHeaders(response);
+                saveRequestToHistory();
+            } catch (error) {
+                await handleRequestError(error);
+            }
+        }
+
+        /**
+         * 处理请求体
+         * 根据请求体类型处理不同的数据
+         * @param {FormData} formData - FormData对象
+         * @param {string} bodyType - 请求体类型
+         * @param {Array} filesInfo - 文件信息数组
+         * @returns {Promise<void>}
+         */
+        async function processRequestBody(formData, bodyType, filesInfo) {
+            switch (bodyType) {
+                case 'formdata': {
+                    const formDataRows = document.querySelectorAll('.formdata-row');
+                    for (const row of formDataRows) {
+                        const isEnabled = row.querySelector('input[type="checkbox"]')?.checked;
+                        if (!isEnabled) continue;
+
+                        const key = row.querySelector('.formdata-key')?.value;
+                        const type = row.querySelector('.formdata-type')?.value;
+                        if (!key) continue;
+
+                        if (type === 'text') {
+                            const value = row.querySelector('.text-input')?.value || '';
+                            formData.append(key, value);
+                        } else if (type === 'file') {
+                            const fileInput = row.querySelector('.file-input');
+                            if (fileInput?.files.length > 0) {
+                                for (const file of fileInput.files) {
+                                    formData.append('files', file);
+                                    filesInfo.push({ field_name: key, file_name: file.name });
+                                }
+                            } else {
+                                formData.append(key, '');
+                            }
+                        }
+                    }
+                    break;
+                }
+                case 'form': {
+                    const formRows = document.querySelectorAll('#formRows .header-row');
+                    for (const row of formRows) {
+                        const inputs = row.getElementsByTagName('input');
+                        const isEnabled = inputs[0]?.checked;
+                        const key = inputs[1]?.value;
+                        if (isEnabled && key) {
+                            formData.append(key, inputs[2]?.value || '');
+                        }
+                    }
+                    break;
+                }
+                case 'json':
+                case 'text':
+                case 'xml': {
+                    const bodyContent = await getRequestBody(bodyType);
+                    if (bodyContent) {
+                        formData.append('body', bodyContent);
+                    }
+                    break;
+                }
+                case 'binary': {
+                    const selectedRow = document.querySelector('#binaryBodyRows input[type="radio"]:checked');
+                    if (selectedRow) {
+                        const fileInput = selectedRow.closest('.body-row').querySelector('input[type="file"]');
+                        if (fileInput?.files.length > 0) {
+                            const file = fileInput.files[0];
+                            formData.append('files', file);
+                            filesInfo.push({ field_name: 'files', file_name: file.name });
+                        }
+                    }
+                    break;
+                }
+            }
+        }
+
+        /**
+         * 更新响应头显示
+         * @param {Response} response - fetch响应对象
+         * @returns {Promise<void>}
+         */
+        async function updateResponseHeaders(response) {
+            const responseHeadersTable = document.getElementById('responseHeaders')?.getElementsByTagName('tbody')[0];
+            if (!responseHeadersTable) return;
+
+            responseHeadersTable.innerHTML = '';
+
+            const allHeaders = response.headers.get('X-Response-Headers');
+            if (allHeaders) {
+                try {
+                    const headers = JSON.parse(allHeaders);
+                    for (const [key, values] of Object.entries(headers)) {
+                        const row = responseHeadersTable.insertRow();
+                        row.insertCell(0).textContent = key;
+                        row.insertCell(1).textContent = Array.isArray(values) ? values.join(', ') : values;
+                    }
+                } catch (e) {
+                    console.error('解析响应头失败:', e);
+                }
+            } else {
+                // 回退到原始方式
+                response.headers.forEach((value, key) => {
+                    const row = responseHeadersTable.insertRow();
+                    row.insertCell(0).textContent = key;
+                    row.insertCell(1).textContent = value;
+                });
+            }
+        }
+
+        /**
+         * 处理请求错误
+         * @param {Error} error - 错误对象
+         * @returns {Promise<void>}
+         */
+        async function handleRequestError(error) {
+            const responseInfo = document.getElementById('responseInfo');
+            const responseBody = document.getElementById('responseBody');
+            const responseHeaders = document.getElementById('responseHeaders');
+
+            if (responseInfo) {
+                responseInfo.innerHTML = `请求错误: ${error.message}`;
+            }
+            if (responseBody) {
+                responseBody.value = '';
+            }
+            if (responseHeaders) {
+                const tbody = responseHeaders.getElementsByTagName('tbody')[0];
+                if (tbody) {
+                    tbody.innerHTML = '';
+                }
+            }
+        }
+
+        /**
+         * 处理WebSocket/SSE请求
+         * @param {string} url - 目标URL
+         * @param {string} method - 请求方法 (WS/SSE)
+         * @param {Object} headers - 请求头
+         * @param {Object} settings - 请求设置
+         * @returns {Promise<void>}
+         */
+        async function handleWSRequest(url, method, headers, settings) {
+            // 断开已有连接
+            if (currentWS) {
+                try { currentWS.close(); } catch (e) { }
+                currentWS = null;
+            }
+            if (currentSSE) {
+                try { currentSSE.close(); } catch (e) { }
+                currentSSE = null;
+            }
+
+            // 清空响应区域
+            const responseInfo = document.getElementById('responseInfo');
+            const responseBody = document.getElementById('responseBody');
+            const responseHeaders = document.getElementById('responseHeaders');
+
+            if (responseInfo) responseInfo.innerHTML = '';
+            if (responseBody) responseBody.value = '';
+            if (responseHeaders) {
+                const tbody = responseHeaders.getElementsByTagName('tbody')[0];
+                if (tbody) tbody.innerHTML = '';
+            }
+
+            // 构造 formData
+            const formData = new FormData();
+            formData.append('url', url);
+            formData.append('method', method);
+            formData.append('body_type', 'none');
+            const headersArr = Object.entries(headers).map(([name, value]) => ({ name, value }));
+            formData.append('headers', JSON.stringify(headersArr));
+            formData.append('time_out', settings.timeout || '0');
+            formData.append('verify_ssl', settings.verify_ssl || 'N');
+            formData.append('follow_redirect', settings.follow_redirect || 'N');
+            formData.append('retry_count', settings.retry_count || '0');
+            formData.append('retry_delay', settings.retry_delay || '0');
+
+            try {
+                const resp = await fetch('/api/forward', { method: 'POST', body: formData });
+                const data = await resp.json();
+                if (data.code !== 0) {
+                    if (responseInfo) {
+                        responseInfo.innerHTML = '连接失败: ' + (data.msg || '未知错误');
+                    }
+                    return;
+                }
+
+                const connect_id = data.connect_id;
+                if (method === 'WS') {
+                    await establishWSConnection(connect_id);
+                } else if (method === 'SSE') {
+                    await establishSSEConnection(connect_id);
+                }
+            } catch (err) {
+                if (responseInfo) {
+                    responseInfo.innerHTML = '请求错误: ' + (err.message || err);
+                }
+                console.error('WS/SSE请求错误:', err);
+            }
+        }
+
+        /**
+         * 建立WebSocket连接
+         * @param {string} connect_id - 连接ID
+         * @returns {Promise<void>}
+         */
+        async function establishWSConnection(connect_id) {
+            const wsProto = location.protocol === 'https:' ? 'wss' : 'ws';
+            const wsUrl = `${wsProto}://${location.host}/api/forward-ws?connect_id=${connect_id}`;
+            const ws = new WebSocket(wsUrl);
+            currentWS = ws;
+
+            const responseBody = document.getElementById('responseBody');
+            if (responseBody) responseBody.value = '';
+
+            ws.onopen = function () {
+                const responseInfo = document.getElementById('responseInfo');
+                if (responseInfo) {
+                    responseInfo.innerHTML = 'WebSocket 连接已建立';
+                }
+                saveRequestToHistory();
+            };
+
+            ws.onmessage = function (e) {
+                // 处理WS响应头
+                try {
+                    const obj = JSON.parse(e.data);
+                    if (obj.type === 'headers' && obj.headers) {
+                        updateWSResponseHeaders(obj.headers);
+                        return;
+                    }
+                } catch (err) {
+                    console.warn('解析WS响应头失败:', err);
+                }
+
+                // 处理普通消息
+                const responseBody = document.getElementById('responseBody');
+                if (responseBody) {
+                    responseBody.value += e.data + '\n';
+                }
+            };
+
+            ws.onerror = function (e) {
+                const responseInfo = document.getElementById('responseInfo');
+                if (responseInfo) {
+                    responseInfo.innerHTML = 'WebSocket 错误';
+                }
+            };
+
+            ws.onclose = function () {
+                const responseInfo = document.getElementById('responseInfo');
+                if (responseInfo) {
+                    responseInfo.innerHTML = 'WebSocket 连接已关闭';
+                }
+                currentWS = null;
+            };
+
+            // 绑定发送/关闭按钮
+            bindWSButtons(ws);
+        }
+
+        /**
+         * 建立SSE连接
+         * @param {string} connect_id - 连接ID
+         * @returns {Promise<void>}
+         */
+        async function establishSSEConnection(connect_id) {
+            const sseUrl = `/api/forward-sse?connect_id=${connect_id}`;
+            const es = new EventSource(sseUrl);
+            currentSSE = es;
+
+            const responseBody = document.getElementById('responseBody');
+            if (responseBody) responseBody.value = '';
+
+            const responseInfo = document.getElementById('responseInfo');
+            if (responseInfo) {
+                responseInfo.innerHTML = 'SSE 连接已建立';
+            }
+            saveRequestToHistory();
+
+            // 监听x-web-curl-headers事件，专门处理响应头
+            es.addEventListener('x-web-curl-headers', function (e) {
+                try {
+                    const obj = JSON.parse(e.data);
+                    updateWSResponseHeaders(obj);
+                } catch (err) {
+                    console.warn('解析SSE响应头失败:', err);
+                }
+            });
+
+            es.onmessage = function (e) {
+                const responseBody = document.getElementById('responseBody');
+                if (responseBody) {
+                    responseBody.value += `[message] ${e.data || ''}\n`;
+                }
+            };
+
+            // 注册用户配置的SSE事件类型监听器
+            const settings = getRequestSettings();
+            if (settings.sse_event_types) {
+                const sseEventTypeList = settings.sse_event_types.split(',').map(type => type.trim()).filter(type => type);
+                sseEventTypeList.forEach(type => {
+                    if (type && type !== 'message' && type !== 'x-web-curl-headers') {
+                        es.addEventListener(type, function (e) {
+                            const responseBody = document.getElementById('responseBody');
+                            if (responseBody) {
+                                responseBody.value += `[${type}] ${e.data || ''}\n`;
+                            }
+                        });
+                    }
+                });
+            }
+
+            es.onerror = function (e) {
+                const responseInfo = document.getElementById('responseInfo');
+                if (responseInfo) {
+                    responseInfo.innerHTML = 'SSE 连接已关闭';
+                }
+                es.close();
+                currentSSE = null;
+            };
+        }
+
+        /**
+         * 更新WebSocket/SSE响应头
+         * @param {Object} headers - 响应头对象
+         */
+        function updateWSResponseHeaders(headers) {
+            const responseHeadersTable = document.getElementById('responseHeaders')?.getElementsByTagName('tbody')[0];
+            if (!responseHeadersTable) return;
+
+            responseHeadersTable.innerHTML = '';
+            for (const [key, values] of Object.entries(headers)) {
+                const row = responseHeadersTable.insertRow();
+                row.insertCell(0).textContent = key;
+                row.insertCell(1).textContent = Array.isArray(values) ? values.join(', ') : values;
+            }
+        }
+
+        /**
+         * 设置Content-Type并获取请求体
+         * @param {Object} headers - 请求头对象
+         * @param {string} bodyType - 请求体类型
+         * @param {Object} requestOptions - 请求选项
+         * @returns {Promise<void>}
+         */
+        async function setContentTypeAndBody(headers, bodyType, requestOptions) {
+            switch (bodyType) {
+                case 'form':
+                    headers['Content-Type'] = 'application/x-www-form-urlencoded';
+                    break;
+                case 'json':
+                    headers['Content-Type'] = 'application/json';
+                    break;
+                case 'text':
+                    // 检查用户是否已经设置了文本类型的 Content-Type
+                    const customContentType = headers['Content-Type'];
+                    if (customContentType && customContentType.startsWith('text/')) {
+                        // 使用用户自定义的 Content-Type
+                        headers['Content-Type'] = customContentType;
+                    } else {
+                        headers['Content-Type'] = 'text/plain';
+                    }
+                    break;
+                case 'binary':
+                    headers['Content-Type'] = 'application/octet-stream';
+                    break;
+            }
+
+            requestOptions.body = await getRequestBody(bodyType);
+        }
+
+        /**
+         * 绑定WebSocket按钮事件
+         * @param {WebSocket} ws - WebSocket实例
+         */
+        function bindWSButtons(ws) {
+            const wsSendBtn = document.getElementById('wsSendBtn');
+            const wsCloseBtn = document.getElementById('wsCloseBtn');
+            const wsSendInput = document.getElementById('wsSendInput');
+
+            if (wsSendBtn) {
+                wsSendBtn.onclick = function () {
+                    const msg = wsSendInput?.value || '';
+                    if (ws && ws.readyState === 1) {
+                        try {
+                            ws.send(msg);
+                        } catch (err) {
+                            console.error('发送WS消息失败:', err);
+                        }
+                    }
+                };
+            }
+
+            if (wsCloseBtn) {
+                wsCloseBtn.onclick = function () {
+                    if (ws && ws.readyState === 1) {
+                        try {
+                            ws.close();
+                        } catch (err) {
+                            console.error('关闭WS连接失败:', err);
+                        }
+                    }
+                };
+            }
+        }
+
+        /**
+         * 获取请求体内容
+         * 根据请求体类型获取对应的请求体数据
+         * @param {string} bodyType - 请求体类型
+         * @returns {Promise<string|FormData|ArrayBuffer|null>} 请求体数据，根据类型返回不同格式
+         * @throws {Error} 当JSON格式不正确或未选择文件时抛出错误
+         */
+        async function getRequestBody(bodyType) {
+            const getSelectedRow = (selector) => {
+                const row = document.querySelector(selector);
+                if (!row) {
+                    throw new Error(`请选择一个${bodyType}请求体`);
+                }
+                return row;
+            };
+
+            switch (bodyType) {
+                case 'json': {
+                    try {
+                        const selectedRow = getSelectedRow('#jsonBodyRows input[type="radio"]:checked');
+                        const jsonText = selectedRow.closest('.body-row').querySelector('textarea')?.value || '';
+                        // 验证JSON格式的合法性
+                        JSON.parse(jsonText);
+                        return jsonText;
+                    } catch (e) {
+                        throw new Error(`JSON格式不正确: ${e.message}`);
+                    }
+                }
+                case 'text': {
+                    const selectedTextRow = getSelectedRow('#textBodyRows input[type="radio"]:checked');
+                    return selectedTextRow.closest('.body-row').querySelector('textarea')?.value || '';
+                }
+                case 'binary': {
+                    const selectedBinaryRow = getSelectedRow('#binaryBodyRows input[type="radio"]:checked');
+                    const fileInput = selectedBinaryRow.closest('.body-row').querySelector('input[type="file"]');
+                    if (!fileInput?.files.length) {
+                        throw new Error('请选择要上传的文件');
+                    }
+                    return await fileInput.files[0].arrayBuffer();
+                }
+                case 'form': {
+                    const formData = new URLSearchParams();
+                    document.querySelectorAll('#formRows .header-row').forEach((row) => {
+                        const inputs = row.getElementsByTagName('input');
+                        const isEnabled = inputs[0]?.checked;
+                        const key = inputs[1]?.value;
+                        if (isEnabled && key) {
+                            formData.append(key, inputs[2]?.value || '');
+                        }
+                    });
+                    return formData.toString();
+                }
+                case 'formdata': {
+                    const multipartFormData = new FormData();
+                    const formDataRows = document.querySelectorAll('.formdata-row');
+                    for (const row of formDataRows) {
+                        const isEnabled = row.querySelector('input[type="checkbox"]')?.checked;
+                        if (!isEnabled) continue;
+
+                        const key = row.querySelector('.formdata-key')?.value;
+                        const type = row.querySelector('.formdata-type')?.value;
+                        if (!key) continue;
+
+                        if (type === 'text') {
+                            const value = row.querySelector('.text-input')?.value || '';
+                            multipartFormData.append(key, value);
+                        } else if (type === 'file') {
+                            const fileInput = row.querySelector('.file-input');
+                            if (fileInput?.files.length > 0) {
+                                for (const file of fileInput.files) {
+                                    multipartFormData.append(key, file);
+                                }
+                            } else {
+                                multipartFormData.append(key, '');
+                            }
+                        }
+                    }
+                    return multipartFormData;
+                }
+                default:
+                    return null;
+            }
+        }
+
+        /**
+         * 处理下载类型的HTTP响应
+         * 将响应内容保存为文件并在页面上显示相关信息
+         * @param {Response} response - fetch API 的响应对象
+         * @param {string} contentType - 响应内容类型
+         * @returns {Promise<void>}
+         * @throws {Error} 当HTTP响应状态不是ok时抛出
+         */
+        async function handleDownloadResponse(response, contentType) {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            // 提取文件名
+            let filename = '';
+            const contentDisposition = response.headers.get('content-disposition');
+            if (contentDisposition?.includes('filename=')) {
+                const filenameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+                if (filenameMatch?.[1]) {
+                    filename = filenameMatch[1].replace(/['"]/g, '');
+                    try {
+                        filename = decodeURIComponent(filename);
+                    } catch (e) {
+                        console.warn('文件名解码失败:', e);
+                    }
+                }
+            }
+
+            if (!filename) {
+                const extension = contentType?.split('/').pop()?.split(';')[0] || 'txt';
+                filename = `downloaded_file.${extension}`;
+            }
+
+            const blob = await response.blob();
+            const downloadUrl = URL.createObjectURL(blob);
+
+            // 使用现代下载方式
+            const a = document.createElement('a');
+            a.href = downloadUrl;
+            a.download = filename;
+            a.style.display = 'none';
+            document.body.appendChild(a);
+            a.click();
+            URL.revokeObjectURL(downloadUrl);
+            document.body.removeChild(a);
+
+            const responseInfo = document.getElementById('responseInfo');
+            const responseBody = document.getElementById('responseBody');
+
+            if (responseInfo) {
+                responseInfo.innerHTML = `
+                    状态码: ${response.status} ${response.statusText}<br>
+                    文件名: ${filename}<br>
+                    文件大小: ${(blob.size / 1024).toFixed(2)} KB<br>
+                    内容类型: ${contentType || '未指定'}<br>
+                `;
+            }
+
+            if (responseBody) {
+                responseBody.value = '[二进制文件内容已下载]';
+            }
+        }
+
+        /**
+         * 处理普通HTTP响应（非下载）
+         * 在页面上显示响应信息、响应体和格式化按钮（如为JSON）
+         * @param {Response} response - fetch API 的响应对象
+         * @param {number} duration - 响应耗时，单位ms
+         * @param {string} contentType - 响应内容类型
+         * @returns {Promise<void>}
+         */
+        async function handleNormalResponse(response, duration, contentType) {
+            const responseInfo = document.getElementById('responseInfo');
+            const responseBody = document.getElementById('responseBody');
+
+            if (responseInfo) {
+                responseInfo.innerHTML = `
+                    状态码: ${response.status} ${response.statusText}<br>
+                    响应时间: ${duration}ms<br>
+                    内容类型: ${contentType || '未指定'}<br>
+                `;
+            }
+
+            // 重置JSON格式化状态
+            resetJsonFormatState();
+
+            // 二进制内容类型检测
+            const binaryTypes = [
+                'application/octet-stream',
+                'application/pdf',
+                'image/',
+                'audio/',
+                'video/',
+                'application/zip',
+                'application/x-rar'
+            ];
+
+            const isBinaryContent = contentType && binaryTypes.some(type => contentType.includes(type));
+
+            if (isBinaryContent) {
+                if (responseBody) {
+                    responseBody.value = `[二进制内容] - ${contentType}\n建议使用"发送并下载"按钮下载此内容`;
+                }
+            } else {
+                const responseText = await response.text();
+                if (responseBody) {
+                    responseBody.value = responseText;
+                }
+
+                // 检测是否为JSON响应
+                const isJsonContentType = contentType?.includes('application/json');
+                const isJsonFormat = responseText.trim() && (
+                    responseText.trim().startsWith('{') ||
+                    responseText.trim().startsWith('[')
+                );
+
+                if (isJsonContentType || (isJsonFormat && (() => {
+                    try {
+                        JSON.parse(responseText.trim());
+                        return true;
+                    } catch {
+                        return false;
+                    }
+                })())) {
+                    showJsonFormatButton();
+                }
+            }
+        }
+
+        /**
+         * 重置JSON格式化状态
+         * 隐藏格式化容器和按钮，显示原始响应内容
+         */
+        function resetJsonFormatState() {
+            const elements = {
+                container: document.getElementById('jsonFormattedContainer'),
+                textarea: document.getElementById('responseBody'),
+                formatBtn: document.getElementById('formatJsonBtn'),
+                copyBtn: document.getElementById('copyFormattedBtn')
+            };
+
+            if (elements.container) elements.container.style.display = 'none';
+            if (elements.textarea) elements.textarea.style.display = 'block';
+            if (elements.formatBtn) elements.formatBtn.style.display = 'none';
+            if (elements.copyBtn) elements.copyBtn.style.display = 'none';
+
+            isJsonFormatted = false;
+        }
+
+        /**
+         * 显示JSON格式化按钮
+         * 当检测到响应为JSON格式时显示格式化按钮
+         */
+        function showJsonFormatButton() {
+            const formatJsonBtn = document.getElementById('formatJsonBtn');
+            if (formatJsonBtn) {
+                formatJsonBtn.style.display = 'inline-block';
+            }
+        }
+
+        // 全局变量，保存当前WS/SSE连接
+        let currentWS = null;
+        let currentSSE = null;
+
+        // localStorage管理工具
+        const StorageManager = {
+            /**
+             * 安全地从localStorage获取数据
+             * @param {string} key - 存储键
+             * @param {any} defaultValue - 默认值
+             * @returns {any} 解析后的数据
+             */
+            get(key, defaultValue = null) {
+                try {
+                    const item = localStorage.getItem(key);
+                    return item ? JSON.parse(item) : defaultValue;
+                } catch (error) {
+                    console.error(`读取localStorage失败 [${key}]:`, error);
+                    return defaultValue;
+                }
+            },
+
+            /**
+             * 安全地向localStorage存储数据
+             * @param {string} key - 存储键
+             * @param {any} value - 要存储的数据
+             */
+            set(key, value) {
+                try {
+                    localStorage.setItem(key, JSON.stringify(value));
+                } catch (error) {
+                    console.error(`写入localStorage失败 [${key}]:`, error);
+                }
+            },
+
+            /**
+             * 从localStorage删除数据
+             * @param {string} key - 存储键
+             */
+            remove(key) {
+                try {
+                    localStorage.removeItem(key);
+                } catch (error) {
+                    console.error(`删除localStorage失败 [${key}]:`, error);
+                }
+            }
+        };
+
+        /**
+         * 设置请求按钮状态
+         * @param {boolean} loading - 是否处于加载状态
+         */
+        function setRequestButtonsState(loading) {
+            const sendBtn = document.getElementById('sendBtn');
+            const downloadBtn = document.getElementById('downloadBtn');
+
+            if (sendBtn) {
+                sendBtn.disabled = loading;
+                if (loading) {
+                    sendBtn.classList.add('loading');
+                    sendBtn.textContent = '请求中...';
+                } else {
+                    sendBtn.classList.remove('loading');
+                    sendBtn.textContent = '发送请求';
+                }
+            }
+
+            if (downloadBtn) {
+                downloadBtn.disabled = loading;
+                if (loading) {
+                    downloadBtn.classList.add('loading');
+                    downloadBtn.textContent = '下载中...';
+                } else {
+                    downloadBtn.classList.remove('loading');
+                    downloadBtn.textContent = '下载';
+                }
+            }
+        }
+
+        /**
+         * 发送HTTP请求或建立WS/SSE连接
+         * 根据请求方法和代理模式选择不同的处理方式
+         * @param {boolean} download - 是否为下载请求
+         * @returns {Promise<void>}
+         */
+        async function sendRequest(download = false) {
+            // 每次请求前先清空响应内容
+            clearResponse();
+            // 设置按钮为加载状态
+            setRequestButtonsState(true);
+
+            try {
+                // 获取基本请求信息
+                const methodElement = document.getElementById('httpMethod');
+                const urlElement = document.getElementById('url');
+
+                if (!methodElement || !urlElement) {
+                    throw new Error('无法获取请求方法或URL');
+                }
+
+                let method = methodElement.value;
+                let url = urlElement.value;
+                const bodyType = getBodyType();
+
+                // 替换URL中的变量
+                url = replaceVariables(url)?.trim() || '';
+                if (!url) {
+                    throw new Error('请输入有效的URL');
+                }
+
+                // 获取并处理请求头
+                const headers = await buildRequestHeaders();
+                const settings = getRequestSettings();
+
+                const requestOptions = {
+                    method,
+                    headers,
+                    cache: settings.cache,
+                    mode: settings.mode,
+                    credentials: settings.credentials,
+                    redirect: settings.redirect,
+                    referrer: settings.referrer,
+                    referrerPolicy: settings.referrerPolicy,
+                    integrity: settings.integrity || undefined,
+                    keepalive: settings.keepalive
+                };
+
+                if (useProxy && method !== 'WS' && method !== 'SSE') {
+                    await handleProxyRequest(url, method, bodyType, headers, settings, download);
+                    return;
+                }
+
+                // WS/SSE 逻辑
+                if (useProxy && (method === 'WS' || method === 'SSE')) {
+                    await handleWSRequest(url, method, headers, settings);
+                    return;
+                }
+
+                // 设置Content-Type并获取请求体
+                if (bodyType !== 'none' && method !== 'GET') {
+                    await setContentTypeAndBody(headers, bodyType, requestOptions);
+                }
+
+                const startTime = Date.now();
+                const response = await fetch(url, requestOptions);
+                const duration = Date.now() - startTime;
+                const contentType = response.headers.get('content-type');
+
+                if (download) {
+                    await handleDownloadResponse(response, contentType);
+                } else {
+                    await handleNormalResponse(response, duration, contentType);
+                }
+
+                await updateResponseHeaders(response);
+                saveRequestToHistory();
+            } catch (error) {
+                await handleRequestError(error);
+            } finally {
+                // 恢复按钮状态
+                setRequestButtonsState(false);
+            }
+        }
+
+        /**
+         * 发送请求并下载响应内容
+         * @returns {Promise<void>}
+         */
+        async function sendRequestAndDownload() {
+            // 每次请求前先清空响应内容
+            clearResponse();
+            await sendRequest(true);
+        }
+
+        /**
+         * 切换响应标签页
+         * @param {string} tabName - 标签页名称，可选值：'headers' 或 'body'
+         */
+        function switchResponseTab(tabName) {
+            document.querySelectorAll('.response-tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.response-tab-content').forEach(content => content.classList.remove('active'));
+
+            const selectedTab = document.querySelector(`.response-tab:nth-child(${tabName === 'headers' ? '1' : '2'})`);
+            const selectedContent = document.getElementById(`${tabName}Content`);
+
+            selectedTab.classList.add('active');
+            selectedContent.classList.add('active');
+        }
+
+        /**
+         * 复制响应内容到剪贴板
+         */
+        async function copyResponse() {
+            const responseBody = document.getElementById('responseBody');
+            if (!responseBody?.value) return;
+
+            try {
+                await navigator.clipboard.writeText(responseBody.value);
+                console.log('响应内容已复制到剪贴板');
+            } catch (err) {
+                console.error('复制响应内容失败:', err);
+            }
+        }
+
+        /**
+         * 清空响应内容
+         * 清空响应信息、响应体、响应头，并断开WS/SSE连接
+         */
+        function clearResponse() {
+            const responseInfo = document.getElementById('responseInfo');
+            const responseBody = document.getElementById('responseBody');
+            const responseHeaders = document.getElementById('responseHeaders');
+
+            if (responseInfo) responseInfo.innerHTML = '';
+            if (responseBody) responseBody.value = '';
+            if (responseHeaders) {
+                const tbody = responseHeaders.getElementsByTagName('tbody')[0];
+                if (tbody) tbody.innerHTML = '';
+            }
+
+            // 重置JSON格式化状态
+            resetJsonFormatState();
+
+            // 安全关闭连接
+            if (currentWS) {
+                try {
+                    currentWS.close();
+                } catch (e) {
+                    console.warn('关闭WS连接时出错:', e);
+                }
+                currentWS = null;
+            }
+            if (currentSSE) {
+                try {
+                    currentSSE.close();
+                } catch (e) {
+                    console.warn('关闭SSE连接时出错:', e);
+                }
+                currentSSE = null;
+            }
+        }
+
+        // 历史记录相关函数
+        const MAX_HISTORY_ITEMS = 50; // 最大历史记录数
+
+        /**
+         * 保存当前请求到历史记录
+         * 将当前请求的所有信息（方法、URL、请求头、请求体）保存到localStorage
+         */
+        function saveRequestToHistory() {
+            const method = document.getElementById('httpMethod').value;
+            const url = document.getElementById('url').value;
+            const bodyType = getBodyType();
+
+            // 获取请求头
+            const headers = {};
+            document.querySelectorAll('#headersList .header-row').forEach(row => {
+                const inputs = row.getElementsByTagName('input');
+                const isEnabled = inputs[0].checked;
+                // 只要有key就保存
+                if (inputs[1].value) {
+                    headers[inputs[1].value] = {
+                        // 如果value为空，使用空字符串
+                        value: inputs[2].value || '',
+                        // 保存复选框状态
+                        enabled: isEnabled,
+                        // 保存备注
+                        remark: inputs[3].value || ''
+                    };
+                }
+            });
+
+            // 获取请求体
+            let body = null;
+            if (bodyType === 'form') {
+                const formData = {};
+                document.querySelectorAll('#formRows .header-row').forEach((row) => {
+                    const inputs = row.getElementsByTagName('input');
+                    const isEnabled = inputs[0].checked;
+                    // 只要有key就保存
+                    if (inputs[1].value) {
+                        formData[inputs[1].value] = {
+                            // 如果value为空，使用空字符串
+                            value: inputs[2].value || '',
+                            // 保存复选框状态
+                            enabled: isEnabled,
+                            // 保存备注
+                            remark: inputs[3].value || ''
+                        };
+                    }
+                });
+                body = { type: 'form', data: formData };
+            } else if (bodyType === 'formdata') {
+                const formDataItems = [];
+                document.querySelectorAll('.formdata-row').forEach(row => {
+                    const key = row.querySelector('.formdata-key').value;
+                    const type = row.querySelector('.formdata-type').value;
+                    const isEnabled = row.querySelector('input[type="checkbox"]').checked;
+                    // 只要有key就保存
+                    if (key) {
+                        const value = type === 'text' ? (row.querySelector('.text-input').value || '') : null;
+                        const remarkInput = row.querySelector('.formdata-remark');
+                        formDataItems.push({
+                            key,
+                            type,
+                            value,
+                            enabled: isEnabled,
+                            remark: remarkInput ? remarkInput.value : ''
+                        });
+                    }
+                });
+                body = { type: 'formdata', data: formDataItems };
+            } else if (bodyType === 'json') {
+                const jsonBodyItems = [];
+                document.querySelectorAll('#jsonBodyRows .body-row').forEach(row => {
+                    const isSelected = row.querySelector('input[type="radio"]').checked;
+                    const content = row.querySelector('textarea').value;
+                    const remark = row.querySelector('.body-remark').value;
+                    jsonBodyItems.push({
+                        content,
+                        selected: isSelected,
+                        remark
+                    });
+                });
+                body = { type: 'json', data: jsonBodyItems };
+            } else if (bodyType === 'text') {
+                const textBodyItems = [];
+                document.querySelectorAll('#textBodyRows .body-row').forEach(row => {
+                    const isSelected = row.querySelector('input[type="radio"]').checked;
+                    const content = row.querySelector('textarea').value;
+                    const remark = row.querySelector('.body-remark').value;
+                    textBodyItems.push({
+                        content,
+                        selected: isSelected,
+                        remark
+                    });
+                });
+                body = { type: 'text', data: textBodyItems };
+            } else if (bodyType === 'binary') {
+                const binaryBodyItems = [];
+                document.querySelectorAll('#binaryBodyRows .body-row').forEach(row => {
+                    const isSelected = row.querySelector('input[type="radio"]').checked;
+                    const fileInput = row.querySelector('input[type="file"]');
+                    const remark = row.querySelector('.body-remark').value;
+                    // 对于文件，我们只能保存文件名，不能保存文件内容
+                    const fileName = fileInput.files.length > 0 ? fileInput.files[0].name : '';
+                    binaryBodyItems.push({
+                        fileName,
+                        selected: isSelected,
+                        remark
+                    });
+                });
+                body = { type: 'binary', data: binaryBodyItems };
+            } else if (bodyType === 'websocket') {
+                const wsBodyItems = [];
+                document.querySelectorAll('#wsBodyRows .body-row').forEach(row => {
+                    const isSelected = row.querySelector('input[type="radio"]').checked;
+                    const type = row.querySelector('.ws-body-type').value;
+                    let value = '';
+                    if (type === 'file') {
+                        const fileInput = row.querySelector('.ws-body-file');
+                        value = fileInput.files.length > 0 ? fileInput.files[0].name : '';
+                    } else {
+                        value = row.querySelector('.ws-body-text').value;
+                    }
+                    const remark = row.querySelector('.body-remark').value;
+                    wsBodyItems.push({ type, value, selected: isSelected, remark });
+                });
+                body = { type: 'websocket', data: wsBodyItems };
+            } else if (bodyType !== 'none') {
+                // 对于其他类型的请求体，尝试从多行结构中获取
+                body = { type: bodyType, data: document.getElementById('requestBody').value };
+            }
+
+            const historyItem = {
+                method,
+                url,
+                headers,
+                body,
+                timestamp: new Date().toISOString()
+            };
+
+            // 获取现有历史记录
+            let history = StorageManager.get('requestHistory', []);
+
+            // 添加新记录到开头
+            history.unshift(historyItem);
+
+            // 限制历史记录数量
+            if (history.length > MAX_HISTORY_ITEMS) {
+                history = history.slice(0, MAX_HISTORY_ITEMS);
+            }
+
+            // 保存回localStorage
+            StorageManager.set('requestHistory', history);
+
+            // 更新显示
+            updateHistoryDisplay();
+        }
+
+        /**
+         * 从历史记录加载请求
+         * 将历史记录中的请求信息恢复到当前界面
+         * @param {Object} historyItem - 历史记录项
+         */
+        function loadRequestFromHistory(historyItem) {
+            // 添加数据有效性检查
+            if (!historyItem || typeof historyItem !== 'object') {
+                console.error('无效的历史记录数据');
+                return;
+            }
+
+            try {
+                // 设置请求方法和URL
+                document.getElementById('httpMethod').value = historyItem.method || 'GET';
+                document.getElementById('url').value = historyItem.url || '';
+
+                // 设置请求头
+                const headersList = document.getElementById('headersList');
+                headersList.innerHTML = '';
+                if (historyItem.headers && typeof historyItem.headers === 'object') {
+                    Object.entries(historyItem.headers).forEach(([key, headerData]) => {
+                        // 添加键值有效性检查
+                        if (key) {
+                            const headerRow = document.createElement('div');
+                            headerRow.className = 'header-row';
+                            const isEnabled = typeof headerData === 'object' ? headerData.enabled : true;
+                            const value = typeof headerData === 'object' ? headerData.value : headerData;
+                            headerRow.innerHTML = `
+                                <input type="checkbox" ${isEnabled ? 'checked' : ''}>
+                                <input type="text" placeholder="Header名称" value="${key}"/>
+                                <input type="text" placeholder="Header值" value="${value}"/>
+                                <input type="text" placeholder="备注" class="header-remark input-remark" value="${headerData.remark}"/>
+                                <button class="remove-btn" onclick="removeHeader(this)">删除</button>
+                            `;
+                            headersList.appendChild(headerRow);
+                        }
+                    });
+                }
+                if (!headersList.children.length) {
+                    // 添加一个空的请求头行
+                    addHeader();
+                }
+
+                // 设置请求体
+                if (historyItem.body && typeof historyItem.body === 'object') {
+                    const bodyType = historyItem.body.type;
+                    const bodyTypeRadio = document.querySelector(`input[name="bodyType"][value="${bodyType}"]`);
+                    if (bodyTypeRadio) {
+                        bodyTypeRadio.checked = true;
+                        updateBodyType(bodyType);
+
+                        if (bodyType === 'form' && historyItem.body.data && typeof historyItem.body.data === 'object') {
+                            const formRows = document.getElementById('formRows');
+                            formRows.innerHTML = '';
+                            Object.entries(historyItem.body.data).forEach(([key, formData]) => {
+                                // 添加键值有效性检查
+                                if (key) {
+                                    const formRow = document.createElement('div');
+                                    formRow.className = 'header-row';
+                                    const isEnabled = typeof formData === 'object' ? formData.enabled : true;
+                                    const value = typeof formData === 'object' ? formData.value : formData;
+                                    formRow.innerHTML = `
+                                        <input type="checkbox" ${isEnabled ? 'checked' : ''}>
+                                        <input type="text" placeholder="参数名称" value="${key}"/>
+                                        <input type="text" placeholder="参数值" value="${value}"/>
+                                        <input type="text" placeholder="备注" class="header-remark input-remark" value="${formData.remark}"/>
+                                        <button class="remove-btn" onclick="removeFormRow(this)">删除</button>
+                                    `;
+                                    formRows.appendChild(formRow);
+                                }
+                            });
+                        } else if (bodyType === 'formdata' && Array.isArray(historyItem.body.data)) {
+                            const formDataRows = document.getElementById('formDataRows');
+                            formDataRows.innerHTML = '';
+                            historyItem.body.data.forEach(item => {
+                                // 添加数据有效性检查
+                                if (item && typeof item === 'object' && item.key) {
+                                    const row = createFormDataRow();
+                                    row.querySelector('input[type="checkbox"]').checked = item.enabled !== false;
+                                    row.querySelector('.formdata-key').value = item.key;
+                                    const typeSelect = row.querySelector('.formdata-type');
+                                    typeSelect.value = item.type || 'text';
+                                    if (item.type === 'text' && item.value !== undefined) {
+                                        row.querySelector('.text-input').value = item.value;
+                                    }
+                                    // 备注赋值
+                                    const remarkInput = row.querySelector('.formdata-remark');
+                                    if (remarkInput) remarkInput.value = item.remark || '';
+                                    handleTypeChange(typeSelect);
+                                    formDataRows.appendChild(row);
+                                }
+                            });
+                        } else if (bodyType === 'json' && Array.isArray(historyItem.body.data)) {
+                            const jsonBodyRows = document.getElementById('jsonBodyRows');
+                            jsonBodyRows.innerHTML = '';
+                            historyItem.body.data.forEach(item => {
+                                if (item && typeof item === 'object') {
+                                    const row = createJsonBodyRow();
+                                    row.querySelector('input[type="radio"]').checked = item.selected || false;
+                                    row.querySelector('textarea').value = item.content || '';
+                                    row.querySelector('.body-remark').value = item.remark || '';
+                                    jsonBodyRows.appendChild(row);
+                                }
+                            });
+                        } else if (bodyType === 'text' && Array.isArray(historyItem.body.data)) {
+                            const textBodyRows = document.getElementById('textBodyRows');
+                            textBodyRows.innerHTML = '';
+                            historyItem.body.data.forEach(item => {
+                                if (item && typeof item === 'object') {
+                                    const row = createTextBodyRow();
+                                    row.querySelector('input[type="radio"]').checked = item.selected || false;
+                                    row.querySelector('textarea').value = item.content || '';
+                                    row.querySelector('.body-remark').value = item.remark || '';
+                                    textBodyRows.appendChild(row);
+                                }
+                            });
+                        } else if (bodyType === 'binary' && Array.isArray(historyItem.body.data)) {
+                            const binaryBodyRows = document.getElementById('binaryBodyRows');
+                            binaryBodyRows.innerHTML = '';
+                            historyItem.body.data.forEach(item => {
+                                if (item && typeof item === 'object') {
+                                    const row = createBinaryBodyRow();
+                                    row.querySelector('input[type="radio"]').checked = item.selected || false;
+                                    row.querySelector('.body-remark').value = item.remark || '';
+                                    // 注意：文件内容无法恢复，只能显示文件名
+                                    binaryBodyRows.appendChild(row);
+                                }
+                            });
+                        } else if (['json', 'text'].includes(bodyType) && historyItem.body.data !== undefined) {
+                            document.getElementById('requestBody').value = historyItem.body.data;
+                        }
+                    }
+                } else {
+                    // 如果没有请求体，设置为默认值
+                    const noneRadio = document.querySelector('input[name="bodyType"][value="none"]');
+                    if (noneRadio) {
+                        noneRadio.checked = true;
+                        updateBodyType('none');
+                    }
+                }
+            } catch (error) {
+                console.error('加载请求数据时出错:', error);
+                alert('加载请求数据时出错，请检查数据格式是否正确');
+            }
+        }
+
+        /**
+         * 更新历史记录显示
+         * 从localStorage读取历史记录并在页面上显示
+         */
+        function updateHistoryDisplay() {
+            const historyList = document.getElementById('historyList');
+            const history = StorageManager.get('requestHistory', []);
+
+            historyList.innerHTML = history.map((item, index) => {
+                const date = new Date(item.timestamp);
+                const formattedDate = date.toLocaleString('zh-CN');
+                // 将历史记录项存储在一个自定义属性中
+                const safeItem = JSON.stringify(item).replace(/'/g, '&#39;').replace(/"/g, '&quot;');
+                return `
+                    <div class="history-item">
+                        <div class="history-time">${formattedDate}</div>
+                        <div>
+                            <span class="history-method">${item.method}</span>
+                            <span class="history-url">${item.url}</span>
+                        </div>
+                        <button class="history-load-btn" data-history='${safeItem}'>加载请求</button>
+                    </div>
+                `;
+            }).join('');
+
+            // 为所有加载按钮添加事件监听器
+            document.querySelectorAll('.history-load-btn').forEach(button => {
+                button.addEventListener('click', function () {
+                    try {
+                        if (!this.dataset.history && !this.dataset.api) {
+                            console.error('没有找到历史记录数据');
+                            return;
+                        }
+                        const historyItem = JSON.parse(this.dataset.history || this.dataset.api);
+                        if (!historyItem || typeof historyItem !== 'object') {
+                            console.error('无效的历史记录数据');
+                            return;
+                        }
+                        loadRequestFromHistory(historyItem);
+                    } catch (error) {
+                        console.error('解析历史记录数据时出错:', error);
+                        alert('加载历史记录失败，数据格式可能已损坏');
+                    }
+                });
+            });
+        }
+
+        /**
+         * 清空所有历史记录
+         * 删除localStorage中的所有历史记录
+         */
+        function clearHistory() {
+            if (confirm('确定要清空所有历史记录吗？此操作不可撤销。')) {
+                StorageManager.remove('requestHistory');
+                updateHistoryDisplay();
+            }
+        }
+
+        /**
+         * 导出历史记录
+         * 将历史记录导出为JSON文件
+         */
+        function exportHistory() {
+            const history = StorageManager.get('requestHistory', []);
+            if (history.length === 0) {
+                return alert('历史记录为空，无需导出');
+            }
+
+            const dataStr = JSON.stringify(history, null, 2);
+            const blob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'history_export.json';
+            document.body.appendChild(a);
+            a.click();
+            URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+        }
+
+        /**
+         * 导入历史记录
+         * 从JSON文件导入历史记录
+         */
+        function importHistory() {
+            const fileInput = document.createElement('input');
+            fileInput.type = 'file';
+            fileInput.accept = '.json';
+            fileInput.style.display = 'none';
+            document.body.appendChild(fileInput);
+
+            fileInput.addEventListener('change', async (event) => {
+                const file = event.target.files[0];
+                if (!file) {
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.onload = async (e) => {
+                    try {
+                        const content = e.target.result;
+                        const history = JSON.parse(content);
+
+                        // 数据有效性检查
+                        if (!Array.isArray(history)) {
+                            throw new Error('导入的历史记录数据格式不正确');
+                        }
+
+                        // 限制导入的历史记录数量
+                        const MAX_IMPORT_ITEMS = 50;
+                        if (history.length > MAX_IMPORT_ITEMS) {
+                            if (!confirm(`导入的历史记录项超过${MAX_IMPORT_ITEMS}条，是否继续？`)) {
+                                return;
+                            }
+                        }
+
+                        // 获取现有历史记录
+                        let existingHistory = StorageManager.get('requestHistory', []);
+
+                        // 合并历史记录
+                        const mergedHistory = [...existingHistory, ...history];
+
+                        // 去重，保留最新的记录
+                        const uniqueHistory = Array.from(new Map(mergedHistory.map(item => [item.url + JSON.stringify(item.headers), item])).values());
+
+                        // 限制历史记录数量
+                        const finalHistory = uniqueHistory.slice(-MAX_HISTORY_ITEMS);
+
+                        // 保存到localStorage
+                        StorageManager.set('requestHistory', finalHistory);
+
+                        alert('历史记录导入成功');
+                        updateHistoryDisplay();
+                    } catch (error) {
+                        alert('导入历史记录时发生错误: ' + error.message);
+                    }
+                };
+
+                reader.readAsText(file);
+            });
+
+            fileInput.click();
+            document.body.removeChild(fileInput);
+        }
+
+        /**
+         * 保存当前请求到接口列表
+         * 将当前请求保存到选中的接口集合中
+         */
+        function saveToApis() {
+            const name = prompt('请输入接口名称：');
+            if (!name) return;
+
+            const method = document.getElementById('httpMethod').value;
+            const url = document.getElementById('url').value;
+            const bodyType = getBodyType();
+
+            // 获取请求头
+            const headers = {};
+            document.querySelectorAll('#headersList .header-row').forEach(row => {
+                const inputs = row.getElementsByTagName('input');
+                const isEnabled = inputs[0].checked;
+                if (inputs[1].value) {
+                    headers[inputs[1].value] = {
+                        value: inputs[2].value || '',
+                        enabled: isEnabled,
+                        remark: inputs[3].value || ''
+                    };
+                }
+            });
+
+            // 获取请求体
+            let body = null;
+            if (bodyType === 'form') {
+                const formData = {};
+                document.querySelectorAll('#formRows .header-row').forEach((row) => {
+                    const inputs = row.getElementsByTagName('input');
+                    const isEnabled = inputs[0].checked;
+                    if (inputs[1].value) {
+                        formData[inputs[1].value] = {
+                            value: inputs[2].value || '',
+                            enabled: isEnabled,
+                            remark: inputs[3].value || ''
+                        };
+                    }
+                });
+                body = { type: 'form', data: formData };
+            } else if (bodyType === 'formdata') {
+                const formDataItems = [];
+                document.querySelectorAll('.formdata-row').forEach(row => {
+                    const key = row.querySelector('.formdata-key').value;
+                    const type = row.querySelector('.formdata-type').value;
+                    const isEnabled = row.querySelector('input[type="checkbox"]').checked;
+                    if (key) {
+                        const value = type === 'text' ? (row.querySelector('.text-input').value || '') : null;
+                        const remarkInput = row.querySelector('.formdata-remark');
+                        formDataItems.push({
+                            key,
+                            type,
+                            value,
+                            enabled: isEnabled,
+                            remark: remarkInput ? remarkInput.value : ''
+                        });
+                    }
+                });
+                body = { type: 'formdata', data: formDataItems };
+            } else if (bodyType === 'json') {
+                const jsonBodyItems = [];
+                document.querySelectorAll('#jsonBodyRows .body-row').forEach(row => {
+                    const isSelected = row.querySelector('input[type="radio"]').checked;
+                    const content = row.querySelector('textarea').value;
+                    const remark = row.querySelector('.body-remark').value;
+                    jsonBodyItems.push({
+                        content,
+                        selected: isSelected,
+                        remark
+                    });
+                });
+                body = { type: 'json', data: jsonBodyItems };
+            } else if (bodyType === 'text') {
+                const textBodyItems = [];
+                document.querySelectorAll('#textBodyRows .body-row').forEach(row => {
+                    const isSelected = row.querySelector('input[type="radio"]').checked;
+                    const content = row.querySelector('textarea').value;
+                    const remark = row.querySelector('.body-remark').value;
+                    textBodyItems.push({
+                        content,
+                        selected: isSelected,
+                        remark
+                    });
+                });
+                body = { type: 'text', data: textBodyItems };
+            } else if (bodyType === 'binary') {
+                const binaryBodyItems = [];
+                document.querySelectorAll('#binaryBodyRows .body-row').forEach(row => {
+                    const isSelected = row.querySelector('input[type="radio"]').checked;
+                    const fileInput = row.querySelector('input[type="file"]');
+                    const remark = row.querySelector('.body-remark').value;
+                    // 对于文件，我们只能保存文件名，不能保存文件内容
+                    const fileName = fileInput.files.length > 0 ? fileInput.files[0].name : '';
+                    binaryBodyItems.push({
+                        fileName,
+                        selected: isSelected,
+                        remark
+                    });
+                });
+                body = { type: 'binary', data: binaryBodyItems };
+            } else if (bodyType === 'websocket') {
+                const wsBodyItems = [];
+                document.querySelectorAll('#wsBodyRows .body-row').forEach(row => {
+                    const isSelected = row.querySelector('input[type="radio"]').checked;
+                    const type = row.querySelector('.ws-body-type').value;
+                    let value = '';
+                    if (type === 'file') {
+                        const fileInput = row.querySelector('.ws-body-file');
+                        value = fileInput.files.length > 0 ? fileInput.files[0].name : '';
+                    } else {
+                        value = row.querySelector('.ws-body-text').value;
+                    }
+                    const remark = row.querySelector('.body-remark').value;
+                    wsBodyItems.push({ type, value, selected: isSelected, remark });
+                });
+                body = { type: 'websocket', data: wsBodyItems };
+            } else if (bodyType !== 'none') {
+                body = { type: bodyType, data: document.getElementById('requestBody').value };
+            }
+
+            const apiItem = {
+                name,
+                method,
+                url,
+                headers,
+                body,
+                timestamp: new Date().toISOString()
+            };
+
+            // 选择集合
+            let collections = getApiCollections();
+            let current = getCurrentCollectionName();
+            let collection = collections.find(c => c.name === current);
+            if (!collection) {
+                collection = { name: current, apis: [] };
+                collections.push(collection);
+            }
+            collection.apis.unshift(apiItem);
+            setApiCollections(collections);
+            updateApisDisplay();
+            switchPanelTab('apis');
+        }
+
+        /**
+         * 更新接口列表显示
+         * 从localStorage读取接口列表并在页面上显示
+         */
+        function updateApisDisplay() {
+            const apisList = document.getElementById('apisList');
+            const collections = getApiCollections();
+            const current = getCurrentCollectionName();
+            const collection = collections.find(c => c.name === current);
+            const apis = collection ? collection.apis : [];
+            apisList.innerHTML = apis.map((item, index) => {
+                const date = new Date(item.timestamp);
+                const formattedDate = date.toLocaleString('zh-CN');
+                const safeItem = JSON.stringify(item).replace(/'/g, '&#39;').replace(/"/g, '&quot;');
+                return `
+                    <div class="history-item">
+                        <div class="history-time">${formattedDate}</div>
+                        <div>
+                            <strong>${item.name}</strong><br>
+                            <span class="history-method">${item.method}</span>
+                            <span class="history-url">${item.url}</span>
+                        </div>
+                        <button class="history-load-btn" data-api='${safeItem}'>加载请求</button>
+                        <button class="remove-btn" onclick="removeApi(${index})">删除</button>
+                    </div>
+                `;
+            }).join('');
+            document.querySelectorAll('#apisList .history-load-btn').forEach(button => {
+                button.addEventListener('click', function () {
+                    const apiItem = JSON.parse(this.dataset.api);
+                    loadRequestFromHistory(apiItem);
+                });
+            });
+            updateApiCollectionSelect();
+        }
+
+        /**
+         * 删除接口
+         * @param {number} index - 要删除的接口索引
+         */
+        function removeApi(index) {
+            if (!confirm('确定要删除这个接口吗？此操作不可撤销。')) {
+                return;
+            }
+            let collections = getApiCollections();
+            let current = getCurrentCollectionName();
+            let collection = collections.find(c => c.name === current);
+            if (collection && index >= 0 && index < collection.apis.length) {
+                collection.apis.splice(index, 1);
+                setApiCollections(collections);
+                updateApisDisplay();
+            }
+        }
+
+        /**
+         * 清空当前集合下的所有接口
+         */
+        function clearApis() {
+            if (!confirm('确定要清空当前集合下所有接口吗？此操作不可撤销。')) {
+                return;
+            }
+            let collections = getApiCollections();
+            let current = getCurrentCollectionName();
+            let collection = collections.find(c => c.name === current);
+            if (collection) {
+                collection.apis = [];
+                setApiCollections(collections);
+                updateApisDisplay();
+            }
+        }
+
+        /**
+         * 导出接口列表
+         * 将当前集合的接口列表导出为JSON文件
+         */
+        function exportApis() {
+            let collections = getApiCollections();
+            let current = getCurrentCollectionName();
+            let collection = collections.find(c => c.name === current);
+            if (!collection || collection.apis.length === 0) {
+                return alert('当前集合接口列表为空，无需导出');
+            }
+            const dataStr = JSON.stringify(collection.apis, null, 2);
+            const blob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${current}_apis_export.json`;
+            document.body.appendChild(a);
+            a.click();
+            URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+        }
+
+        /**
+         * 导入接口列表
+         * 从JSON文件导入接口列表
+         */
+        function importApis() {
+            const fileInput = document.createElement('input');
+            fileInput.type = 'file';
+            fileInput.accept = '.json';
+            fileInput.style.display = 'none';
+            document.body.appendChild(fileInput);
+            fileInput.addEventListener('change', async (event) => {
+                const file = event.target.files[0];
+                if (!file) {
+                    return;
+                }
+                const reader = new FileReader();
+                reader.onload = async (e) => {
+                    try {
+                        const content = e.target.result;
+                        const apis = JSON.parse(content);
+                        if (!Array.isArray(apis)) {
+                            throw new Error('导入的接口数据格式不正确');
+                        }
+                        let collections = getApiCollections();
+                        let current = getCurrentCollectionName();
+                        let collection = collections.find(c => c.name === current);
+                        if (!collection) {
+                            collection = { name: current, apis: [] };
+                            collections.push(collection);
+                        }
+                        // 合并接口列表
+                        const mergedApis = [...collection.apis, ...apis];
+                        // 去重，保留最新的记录
+                        const uniqueApis = Array.from(new Map(mergedApis.map(item => [item.name, item])).values());
+                        collection.apis = uniqueApis;
+                        setApiCollections(collections);
+                        alert('接口列表导入成功');
+                        updateApisDisplay();
+                    } catch (error) {
+                        alert('导入接口列表时发生错误: ' + error.message);
+                    }
+                };
+                reader.readAsText(file);
+            });
+            fileInput.click();
+            document.body.removeChild(fileInput);
+        }
+
+        /**
+         * 添加变量行
+         * 在变量表格中添加一个新的变量行
+         */
+        function addVariableRow() {
+            const tbody = document.getElementById('variablesTableBody');
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td><input type="checkbox" checked></td>
+                <td><input type="text" class="var-name"></td>
+                <td><input type="text" class="var-value"></td>
+                <td><button class="remove-btn" onclick="removeVariableRow(this)">删除</button></td>
+            `;
+            tbody.appendChild(row);
+        }
+
+        /**
+         * 删除变量行
+         * @param {HTMLElement} button - 删除按钮元素
+         */
+        function removeVariableRow(button) {
+            button.closest('tr').remove();
+        }
+
+        /**
+         * 保存变量配置
+         * 将变量表格中的内容保存到localStorage
+         */
+        function saveVariables() {
+            const rows = document.querySelectorAll('#variablesTableBody tr');
+            const envConf = [];
+            const envData = new Map();
+
+            rows.forEach((row, index) => {
+                const enable = row.querySelector('input[type="checkbox"]').checked;
+                const name = row.querySelector('.var-name').value.trim();
+                const value = row.querySelector('.var-value').value.trim();
+
+                // 检查变量名和值是否包含非法字符
+                if (name.includes('{') || name.includes('}') || value.includes('{') || value.includes('}')) {
+                    alert('变量名和变量值不能包含 { 或 } 字符');
+                    return;
+                }
+
+                // 添加到配置数组
+                envConf.push({
+                    row_id: index + 1,
+                    enable: enable,
+                    env_name: name,
+                    env_value: value
+                });
+
+                // 如果启用且有变量名，则添加到最终变量映射
+                if (enable && name) {
+                    envData.set(name, value);
+                }
+            });
+
+            // 转换为数组格式
+            const envDataArray = Array.from(envData.entries()).map(([env_name, env_value]) => ({
+                env_name,
+                env_value
+            }));
+
+            // 保存到localStorage
+            StorageManager.set('env_conf', envConf);
+            StorageManager.set('env_data', envDataArray);
+
+            alert('变量保存成功');
+        }
+
+        /**
+         * 加载变量配置
+         * 从localStorage读取变量配置并显示在表格中
+         */
+        function loadVariables() {
+            const envConf = StorageManager.get('env_conf', []);
+            const tbody = document.getElementById('variablesTableBody');
+            tbody.innerHTML = '';
+
+            envConf.forEach(item => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td><input type="checkbox" ${item.enable ? 'checked' : ''}></td>
+                    <td><input type="text" class="var-name" value="${item.env_name}"></td>
+                    <td><input type="text" class="var-value" value="${item.env_value}"></td>
+                    <td><button class="remove-btn" onclick="removeVariableRow(this)">删除</button></td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            if (envConf.length === 0) {
+                addVariableRow();
+            }
+        }
+
+        /**
+         * 清空所有变量
+         * 删除localStorage中的所有变量配置
+         */
+        function clearVariables() {
+            if (confirm('确定要清空所有变量吗？此操作不可撤销。')) {
+                StorageManager.remove('env_conf');
+                StorageManager.remove('env_data');
+                loadVariables();
+            }
+        }
+
+        /**
+         * 导出变量配置
+         * 将变量配置导出为JSON文件
+         */
+        function exportVariables() {
+            const envConf = StorageManager.get('env_conf', []);
+            if (envConf.length === 0) {
+                return alert('没有可导出的变量');
+            }
+
+            const dataStr = JSON.stringify(envConf, null, 2);
+            const blob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'variables_export.json';
+            document.body.appendChild(a);
+            a.click();
+            URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+        }
+
+        /**
+         * 导入变量配置
+         * 从JSON文件导入变量配置
+         */
+        function importVariables() {
+            const fileInput = document.createElement('input');
+            fileInput.type = 'file';
+            fileInput.accept = '.json';
+            fileInput.style.display = 'none';
+            document.body.appendChild(fileInput);
+
+            fileInput.addEventListener('change', async (event) => {
+                const file = event.target.files[0];
+                if (!file) {
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.onload = async (e) => {
+                    try {
+                        const content = e.target.result;
+                        const envConf = JSON.parse(content);
+
+                        if (!Array.isArray(envConf)) {
+                            throw new Error('导入的变量数据格式不正确');
+                        }
+
+                        StorageManager.set('env_conf', envConf);
+                        loadVariables();
+                        alert('变量导入成功');
+                    } catch (error) {
+                        alert('导入变量时发生错误: ' + error.message);
+                    }
+                };
+
+                reader.readAsText(file);
+            });
+
+            fileInput.click();
+            document.body.removeChild(fileInput);
+        }
+
+        /**
+         * 替换变量
+         * 将文本中的{{变量名}}替换为对应的变量值
+         * @param {string} text - 要替换的文本
+         * @returns {string} 替换后的文本
+         */
+        function replaceVariables(text) {
+            if (!text) return text;
+
+            const envData = StorageManager.get('env_data', []);
+            let result = text;
+
+            envData.forEach(({ env_name, env_value }) => {
+                const pattern = new RegExp(`{{${env_name}}}`, 'g');
+                result = result.replace(pattern, env_value);
+            });
+
+            return result;
+        }
+
+        /**
+         * 清空所有全局请求头
+         */
+        function clearGlobalHeaders() {
+            if (confirm('确定要清空所有全局头吗？此操作不可撤销。')) {
+                StorageManager.remove('globalHeaders');
+                updateGlobalHeadersDisplay();
+            }
+        }
+
+        /**
+         * 添加全局请求头行
+         * 在全局请求头表格中添加一个新的请求头行
+         */
+        function addGlobalHeaderRow() {
+            const tbody = document.getElementById('globalHeadersTableBody');
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td><input type="checkbox" checked></td>
+                <td><input type="text" class="header-name"></td>
+                <td><input type="text" class="header-value"></td>
+                <td><button class="remove-btn" onclick="removeGlobalHeaderRow(this)">删除</button></td>
+            `;
+            tbody.appendChild(row);
+        }
+
+        /**
+         * 删除全局请求头行
+         * @param {HTMLElement} button - 删除按钮元素
+         */
+        function removeGlobalHeaderRow(button) {
+            button.closest('tr').remove();
+        }
+
+        /**
+         * 保存全局请求头配置
+         * 将全局请求头表格中的内容保存到localStorage
+         */
+        function saveGlobalHeaders() {
+            const rows = document.querySelectorAll('#globalHeadersTableBody tr');
+            const headerConf = [];
+            const headerData = new Map();
+
+            rows.forEach((row, index) => {
+                const enable = row.querySelector('input[type="checkbox"]').checked;
+                const name = row.querySelector('.header-name').value.trim();
+                const value = row.querySelector('.header-value').value.trim();
+
+                // 添加到配置数组
+                headerConf.push({
+                    row_id: index + 1,
+                    enable: enable,
+                    header_name: name,
+                    header_value: value
+                });
+
+                // 如果启用且有请求头名称，则添加到最终映射
+                if (enable && name) {
+                    headerData.set(name, value);
+                }
+            });
+
+            // 转换为数组格式
+            const headerDataArray = Array.from(headerData.entries()).map(([header_name, header_value]) => ({
+                header_name,
+                header_value
+            }));
+
+            // 保存到localStorage
+            StorageManager.set('header_conf', headerConf);
+            StorageManager.set('header_data', headerDataArray);
+
+            alert('全局请求头保存成功');
+        }
+
+        /**
+         * 加载全局请求头配置
+         * 从localStorage读取全局请求头配置并显示在表格中
+         */
+        function loadGlobalHeaders() {
+            const headerConf = StorageManager.get('header_conf', []);
+            const tbody = document.getElementById('globalHeadersTableBody');
+            tbody.innerHTML = '';
+
+            headerConf.forEach(item => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td><input type="checkbox" ${item.enable ? 'checked' : ''}></td>
+                    <td><input type="text" class="header-name" value="${item.header_name}"></td>
+                    <td><input type="text" class="header-value" value="${item.header_value}"></td>
+                    <td><button class="remove-btn" onclick="removeGlobalHeaderRow(this)">删除</button></td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            if (headerConf.length === 0) {
+                addGlobalHeaderRow();
+            }
+        }
+
+        /**
+         * 清空所有全局请求头
+         * 删除localStorage中的所有全局请求头配置
+         */
+        function clearGlobalHeaders() {
+            if (confirm('确定要清空所有全局请求头吗？此操作不可撤销。')) {
+                StorageManager.remove('header_conf');
+                StorageManager.remove('header_data');
+                loadGlobalHeaders();
+            }
+        }
+
+        /**
+         * 导出全局请求头配置
+         * 将全局请求头配置导出为JSON文件
+         */
+        function exportGlobalHeaders() {
+            const headerConf = StorageManager.get('header_conf', []);
+            if (headerConf.length === 0) {
+                return alert('没有可导出的全局请求头');
+            }
+
+            const dataStr = JSON.stringify(headerConf, null, 2);
+            const blob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'global_headers_export.json';
+            document.body.appendChild(a);
+            a.click();
+            URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+        }
+
+        /**
+         * 导入全局请求头配置
+         * 从JSON文件导入全局请求头配置
+         */
+        function importGlobalHeaders() {
+            const fileInput = document.createElement('input');
+            fileInput.type = 'file';
+            fileInput.accept = '.json';
+            fileInput.style.display = 'none';
+            document.body.appendChild(fileInput);
+
+            fileInput.addEventListener('change', async (event) => {
+                const file = event.target.files[0];
+                if (!file) {
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.onload = async (e) => {
+                    try {
+                        const content = e.target.result;
+                        const headerConf = JSON.parse(content);
+
+                        if (!Array.isArray(headerConf)) {
+                            throw new Error('导入的全局请求头数据格式不正确');
+                        }
+
+                        StorageManager.set('header_conf', headerConf);
+                        loadGlobalHeaders();
+                        alert('全局请求头导入成功');
+                    } catch (error) {
+                        alert('导入全局请求头时发生错误: ' + error.message);
+                    }
+                };
+
+                reader.readAsText(file);
+            });
+
+            fileInput.click();
+            document.body.removeChild(fileInput);
+        }
+
+        /**
+         * 获取全局请求头
+         * 从localStorage读取全局请求头并返回对象
+         * @returns {Object} 全局请求头对象
+         */
+        function getGlobalHeaders() {
+            const headerData = StorageManager.get('header_data', []);
+            const headers = {};
+            headerData.forEach(({ header_name, header_value }) => {
+                const key = replaceVariables(header_name).trim();
+                const value = replaceVariables(header_value).trim();
+                headers[key] = value;
+            });
+            return headers;
+        }
+
+        /**
+         * 打开设置对话框
+         * 显示请求配置设置对话框
+         */
+        function openSettings() {
+            document.getElementById('dialogOverlay').style.display = 'block';
+            document.getElementById('settingsDialog').style.display = 'block';
+            loadSettings();
+        }
+
+        /**
+         * 关闭设置对话框
+         * 隐藏请求配置设置对话框
+         */
+        function closeSettings() {
+            document.getElementById('dialogOverlay').style.display = 'none';
+            document.getElementById('settingsDialog').style.display = 'none';
+        }
+
+        /**
+         * 加载设置到对话框
+         * 从localStorage读取当前设置并显示在对话框中
+         */
+        function loadSettings() {
+            const currentSettings = getRequestSettings();
+
+            document.getElementById('settingVerifySSL').value = currentSettings.verify_ssl;
+            document.getElementById('settingFollowRedirect').value = currentSettings.follow_redirect;
+            document.getElementById('settingTimeout').value = currentSettings.timeout;
+            document.getElementById('settingRetryCount').value = currentSettings.retry_count;
+            document.getElementById('settingRetryDelay').value = currentSettings.retry_delay;
+            document.getElementById('settingSseEventTypes').value = currentSettings.sse_event_types || '';
+
+            document.getElementById('settingCache').value = currentSettings.cache;
+            document.getElementById('settingMode').value = currentSettings.mode;
+            document.getElementById('settingCredentials').value = currentSettings.credentials;
+            document.getElementById('settingRedirect').value = currentSettings.redirect;
+            document.getElementById('settingReferrerPolicy').value = currentSettings.referrerPolicy;
+            document.getElementById('settingReferrer').value = currentSettings.referrer === 'custom' ? 'custom' : currentSettings.referrer;
+            document.getElementById('settingReferrerCustom').value = currentSettings.referrer !== 'about:client' && currentSettings.referrer !== '' ? currentSettings.referrer : '';
+            document.getElementById('settingIntegrity').value = currentSettings.integrity;
+            document.getElementById('settingKeepalive').value = currentSettings.keepalive.toString();
+            handleReferrerChange();
+        }
+
+        /**
+         * 保存设置
+         * 将对话框中的设置保存到localStorage
+         */
+        function saveSettings() {
+            const settings = {
+
+                verify_ssl: document.getElementById('settingVerifySSL').value,
+                follow_redirect: document.getElementById('settingFollowRedirect').value,
+                timeout: document.getElementById('settingTimeout').value,
+                retry_count: document.getElementById('settingRetryCount').value,
+                retry_delay: document.getElementById('settingRetryDelay').value,
+                sse_event_types: document.getElementById('settingSseEventTypes').value,
+
+                cache: document.getElementById('settingCache').value,
+                mode: document.getElementById('settingMode').value,
+                credentials: document.getElementById('settingCredentials').value,
+                redirect: document.getElementById('settingRedirect').value,
+                referrerPolicy: document.getElementById('settingReferrerPolicy').value,
+                referrer: document.getElementById('settingReferrer').value === 'custom'
+                    ? document.getElementById('settingReferrerCustom').value
+                    : document.getElementById('settingReferrer').value,
+                integrity: document.getElementById('settingIntegrity').value,
+                keepalive: document.getElementById('settingKeepalive').value === 'true'
+            };
+            StorageManager.set('requestSettings', settings);
+            closeSettings();
+        }
+
+        /**
+         * 获取请求设置
+         * 从localStorage读取请求设置，如果没有则使用默认值
+         * @returns {Object} 请求设置对象
+         */
+        function getRequestSettings() {
+            const settings = StorageManager.get('requestSettings', {});
+            const defaultSettings = {
+                cache: 'default',
+                mode: 'cors',
+                credentials: 'same-origin',
+                redirect: 'follow',
+                referrerPolicy: 'no-referrer-when-downgrade',
+                referrer: 'about:client',
+                integrity: '',
+                keepalive: false,
+                verify_ssl: 'N',
+                follow_redirect: 'N',
+                timeout: '0',
+                retry_count: '0',
+                retry_delay: '0',
+                sse_event_types: ''
+            };
+            return { ...defaultSettings, ...settings };
+        }
+
+        /**
+         * 处理Referrer设置变化
+         * 当Referrer选择为自定义时显示自定义输入框
+         */
+        function handleReferrerChange() {
+            const referrerSelect = document.getElementById('settingReferrer');
+            const customInput = document.getElementById('settingReferrerCustom');
+            customInput.style.display = referrerSelect.value === 'custom' ? 'block' : 'none';
+        }
+
+        /**
+         * 切换侧边栏面板标签页
+         * @param {string} tab - 标签页名称
+         */
+        function switchPanelTab(tab) {
+            document.querySelectorAll('.panel-tab').forEach(tabElement => tabElement.classList.remove('active'));
+            document.querySelectorAll('.panel-content').forEach(contentElement => contentElement.classList.remove('active'));
+
+            const activeTab = document.querySelector(`.panel-tab[onclick="switchPanelTab('${tab}')"]`);
+            const activeContent = document.getElementById(`${tab}Panel`);
+
+            activeTab.classList.add('active');
+            activeContent.classList.add('active');
+
+            // 保存最后选中的标签页
+            StorageManager.set('lastActiveTab', tab);
+        }
+
+        /**
+         * 导出所有配置
+         * 将历史记录、接口集合、变量、全局请求头、请求设置导出为JSON文件
+         */
+        function exportAllConfig() {
+            const config = {
+                history: StorageManager.get('requestHistory', []),
+                apiCollections: StorageManager.get('apiCollections', []),
+                variables: StorageManager.get('env_conf', []),
+                globalHeaders: StorageManager.get('header_conf', []),
+                requestSettings: StorageManager.get('requestSettings', {})
+            };
+
+            const dataStr = JSON.stringify(config, null, 2);
+            const blob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'curl_config_export.json';
+            document.body.appendChild(a);
+            a.click();
+            URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+        }
+
+        /**
+         * 导入所有配置
+         * 从JSON文件导入所有配置
+         */
+        function importAllConfig() {
+            const fileInput = document.createElement('input');
+            fileInput.type = 'file';
+            fileInput.accept = '.json';
+            fileInput.style.display = 'none';
+            document.body.appendChild(fileInput);
+
+            fileInput.addEventListener('change', async (event) => {
+                const file = event.target.files[0];
+                if (!file) {
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.onload = async (e) => {
+                    try {
+                        const content = e.target.result;
+                        const config = JSON.parse(content);
+
+                        // 验证配置格式
+                        if (typeof config !== 'object') {
+                            throw new Error('导入的配置文件格式不正确');
+                        }
+
+                        // 导入历史记录
+                        if (Array.isArray(config.history)) {
+                            StorageManager.set('requestHistory', config.history);
+                        }
+
+                        // 导入接口集合
+                        if (Array.isArray(config.apiCollections)) {
+                            StorageManager.set('apiCollections', config.apiCollections);
+                            // 默认选中第一个集合
+                            if (config.apiCollections.length > 0) {
+                                setCurrentCollectionName(config.apiCollections[0].name);
+                            }
+                        }
+
+                        // 导入变量配置
+                        if (Array.isArray(config.variables)) {
+                            StorageManager.set('env_conf', config.variables);
+                            // 更新变量数据
+                            const envData = config.variables
+                                .filter(item => item.enable)
+                                .map(({ env_name, env_value }) => ({ env_name, env_value }));
+                            StorageManager.set('env_data', envData);
+                        }
+
+                        // 导入全局请求头
+                        if (Array.isArray(config.globalHeaders)) {
+                            StorageManager.set('header_conf', config.globalHeaders);
+                            // 更新请求头数据
+                            const headerData = config.globalHeaders
+                                .filter(item => item.enable)
+                                .map(({ header_name, header_value }) => ({ header_name, header_value }));
+                            StorageManager.set('header_data', headerData);
+                        }
+
+                        // 导入请求配置
+                        if (typeof config.requestSettings === 'object') {
+                            StorageManager.set('requestSettings', config.requestSettings);
+                        }
+
+                        // 更新所有显示
+                        updateHistoryDisplay();
+                        updateApisDisplay();
+                        loadVariables();
+                        loadGlobalHeaders();
+                        loadSettings();
+                        updateApiCollectionSelect();
+
+                        alert('配置导入成功');
+                    } catch (error) {
+                        alert('导入配置时发生错误: ' + error.message);
+                    }
+                };
+
+                reader.readAsText(file);
+            });
+
+            fileInput.click();
+            document.body.removeChild(fileInput);
+        }
+
+        // 集合相关逻辑
+        function getApiCollections() {
+            let collections = StorageManager.get('apiCollections', []);
+            // 兼容老数据迁移
+            if (collections.length === 0) {
+                let oldApis = StorageManager.get('savedApis', []);
+                collections = [{ name: '默认集合', apis: oldApis }];
+                StorageManager.set('apiCollections', collections);
+                StorageManager.remove('savedApis');
+            }
+            // 如果依然没有集合，自动创建一个默认集合
+            if (collections.length === 0) {
+                collections = [{ name: '默认集合', apis: [] }];
+                StorageManager.set('apiCollections', collections);
+            }
+            return collections;
+        }
+
+        function setApiCollections(collections) {
+            StorageManager.set('apiCollections', collections);
+        }
+
+        function getCurrentCollectionName() {
+            return StorageManager.get('currentApiCollection', '默认集合');
+        }
+
+        function setCurrentCollectionName(name) {
+            StorageManager.set('currentApiCollection', name);
+        }
+
+        /**
+         * 更新接口集合选择下拉框
+         * 根据当前集合列表更新下拉框选项
+         */
+        function updateApiCollectionSelect() {
+            const collections = getApiCollections();
+            const select = document.getElementById('apiCollectionSelect');
+            select.innerHTML = collections.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
+            // 选中当前集合
+            let current = getCurrentCollectionName();
+            if (!collections.some(c => c.name === current)) {
+                // 如果当前集合不存在，默认选第一个
+                current = collections.length > 0 ? collections[0].name : '';
+                setCurrentCollectionName(current);
+            }
+            select.value = current;
+        }
+
+        /**
+         * 切换接口集合
+         * 当用户选择不同的接口集合时更新显示
+         */
+        function switchApiCollection() {
+            const select = document.getElementById('apiCollectionSelect');
+            setCurrentCollectionName(select.value);
+            updateApisDisplay();
+        }
+
+        /**
+         * 添加新的接口集合
+         * 创建新的接口集合并设置为当前选中
+         */
+        function addApiCollection() {
+            const name = prompt('请输入新集合名称：');
+            if (!name) return;
+            let collections = getApiCollections();
+            if (collections.some(c => c.name === name)) {
+                alert('集合名已存在');
+                return;
+            }
+            collections.push({ name, apis: [] });
+            setApiCollections(collections);
+            setCurrentCollectionName(name);
+            updateApiCollectionSelect();
+            updateApisDisplay();
+        }
+
+        /**
+         * 删除当前接口集合
+         * 删除当前选中的接口集合，默认集合不能删除
+         */
+        function removeApiCollection() {
+            const current = getCurrentCollectionName();
+            if (current === '默认集合') {
+                alert('默认集合不能删除');
+                return;
+            }
+            if (!confirm('确定要删除集合及其所有接口吗？')) return;
+            let collections = getApiCollections();
+            collections = collections.filter(c => c.name !== current);
+            setApiCollections(collections);
+            setCurrentCollectionName('默认集合');
+            updateApiCollectionSelect();
+            updateApisDisplay();
+        }
+
+        /**
+         * 新建请求
+         * 清空当前请求的所有内容，包括URL、请求头、请求体、响应等
+         */
+        function newRequest() {
+            // 清空URL
+            const urlInput = document.getElementById('url');
+            if (urlInput) urlInput.value = '';
+
+            // 清空请求头
+            const headersList = document.getElementById('headersList');
+            if (headersList) {
+                headersList.innerHTML = '';
+                addHeader();
+            }
+
+            // 清空多行请求体
+            const jsonBodyRows = document.getElementById('jsonBodyRows');
+            if (jsonBodyRows) {
+                jsonBodyRows.innerHTML = '';
+            }
+            const textBodyRows = document.getElementById('textBodyRows');
+            if (textBodyRows) {
+                textBodyRows.innerHTML = '';
+            }
+            const binaryBodyRows = document.getElementById('binaryBodyRows');
+            if (binaryBodyRows) {
+                binaryBodyRows.innerHTML = '';
+            }
+
+            // 清空form表单
+            const formRows = document.getElementById('formRows');
+            if (formRows) {
+                formRows.innerHTML = '';
+                addFormRow();
+            }
+
+            // 清空formdata
+            const formDataRows = document.getElementById('formDataRows');
+            if (formDataRows) {
+                formDataRows.innerHTML = '';
+                addFormDataRow();
+            }
+
+            // 清空WebSocket消息体
+            const wsBodyRows = document.getElementById('wsBodyRows');
+            if (wsBodyRows) {
+                wsBodyRows.innerHTML = '';
+            }
+
+            // 重置body类型为none
+            const noneRadio = document.querySelector('input[name="bodyType"][value="none"]');
+            if (noneRadio) {
+                noneRadio.checked = true;
+                updateBodyType('none');
+            }
+
+            // 清空响应信息
+            clearResponse();
+        }
+
+        // JSON格式化高亮相关变量
+        let formattedJson = '';
+        let isJsonFormatted = false;
+
+        /**
+         * 格式化响应体中的JSON内容并高亮显示
+         * 解析并格式化JSON字符串，渲染为高亮DOM结构
+         * @returns {void}
+         */
+        function formatJsonResponse() {
+            const responseBody = document.getElementById('responseBody');
+            const jsonFormattedContainer = document.getElementById('jsonFormattedContainer');
+            const formatJsonBtn = document.getElementById('formatJsonBtn');
+            const copyFormattedBtn = document.getElementById('copyFormattedBtn');
+
+            if (!responseBody || !jsonFormattedContainer || !formatJsonBtn || !copyFormattedBtn) {
+                console.error('JSON格式化所需元素不存在');
+                return;
+            }
+
+            try {
+                const rawJson = responseBody.value.trim();
+                if (!rawJson) {
+                    alert('没有JSON内容可格式化');
+                    return;
+                }
+
+                const jsonObj = JSON.parse(rawJson);
+                formattedJson = JSON.stringify(jsonObj, null, 4);
+
+                // 渲染格式化后的JSON
+                renderJsonWithDom(jsonObj);
+
+                // 显示格式化容器，隐藏原始textarea
+                jsonFormattedContainer.style.display = 'block';
+                responseBody.style.display = 'none';
+                copyFormattedBtn.style.display = 'inline-block';
+                isJsonFormatted = true;
+
+            } catch (error) {
+                alert('JSON格式错误: ' + (error.message || error));
+                console.error('JSON格式化失败:', error);
+            }
+        }
+
+        /**
+         * 复制格式化后的JSON字符串到剪贴板
+         * @returns {void}
+         */
+        /**
+         * 复制格式化JSON到剪贴板
+         */
+        async function copyFormattedJson() {
+            if (!formattedJson) {
+                alert("请先格式化JSON数据");
+                return;
+            }
+
+            const copyFormattedBtn = document.getElementById('copyFormattedBtn');
+
+            try {
+                await navigator.clipboard.writeText(formattedJson);
+
+                if (copyFormattedBtn) {
+                    copyFormattedBtn.textContent = "✓ 已复制!";
+                    setTimeout(() => {
+                        if (copyFormattedBtn) {
+                            copyFormattedBtn.textContent = "复制格式化JSON";
+                        }
+                    }, 2000);
+                }
+                console.log('格式化JSON已复制到剪贴板');
+            } catch (err) {
+                console.error('复制格式化JSON失败:', err);
+                alert("复制失败，请手动复制内容");
+            }
+        }
+
+        /**
+         * JSON格式化:使用DOM渲染JSON
+         * 将JSON数据渲染为可折叠的DOM结构，支持展开/收起功能
+         * @param {any} data - 要渲染的JSON数据
+         */
+        function renderJsonWithDom(data) {
+            const jsonFormattedContainer = document.getElementById('jsonFormattedContainer');
+            jsonFormattedContainer.innerHTML = '';
+            const container = document.createElement('div');
+            container.className = 'json-formatted';
+            processValue(container, data);
+            jsonFormattedContainer.appendChild(container);
+        }
+
+        /**
+         * JSON格式化:处理不同类型的值
+         * 根据数据类型创建对应的DOM元素，支持null、数组、对象、字符串、数字、布尔值
+         * @param {HTMLElement} parent - 父元素
+         * @param {any} data - 要处理的数据
+         */
+        function processValue(parent, data) {
+            if (data === null) {
+                createAndAppendSpan(parent, 'null', 'json-null');
+            } else if (Array.isArray(data)) {
+                processArray(parent, data);
+            } else if (typeof data === 'object') {
+                processObject(parent, data);
+            } else if (typeof data === 'string') {
+                createAndAppendSpan(parent, `"${data}"`, 'json-string');
+            } else if (typeof data === 'number') {
+                createAndAppendSpan(parent, data, 'json-number');
+            } else if (typeof data === 'boolean') {
+                createAndAppendSpan(parent, data ? 'true' : 'false', 'json-boolean');
+            }
+        }
+
+        /**
+         * JSON格式化:处理数组
+         * 创建可折叠的数组DOM结构，支持展开/收起功能
+         * @param {HTMLElement} parent - 父元素
+         * @param {Array} arr - 要处理的数组
+         */
+        function processArray(parent, arr) {
+            if (arr.length === 0) {
+                createAndAppendSpan(parent, '[]', 'json-bracket');
+                return;
+            }
+            // 折叠按钮
+            const arrow = document.createElement('span');
+            arrow.textContent = '▼';
+            arrow.className = 'json-arrow';
+            // 括号
+            const bracketSpan = document.createElement('span');
+            bracketSpan.textContent = '[';
+            bracketSpan.className = 'json-bracket';
+            // 容器
+            const itemsContainer = document.createElement('div');
+            itemsContainer.className = 'json-container';
+            arr.forEach((item, i) => {
+                const itemDiv = document.createElement('div');
+                processValue(itemDiv, item);
+                if (i < arr.length - 1) {
+                    createAndAppendSpan(itemDiv, ',', 'json-bracket');
+                }
+                itemsContainer.appendChild(itemDiv);
+            });
+            // 结束括号
+            const endBracketDiv = document.createElement('div');
+            const endBracketSpan = document.createElement('span');
+            endBracketSpan.textContent = ']';
+            endBracketSpan.className = 'json-bracket';
+            endBracketDiv.appendChild(endBracketSpan);
+            // 折叠逻辑
+            arrow.onclick = function () {
+                if (itemsContainer.style.display === 'none') {
+                    itemsContainer.style.display = '';
+                    endBracketDiv.style.display = '';
+                    arrow.textContent = '▼';
+                } else {
+                    itemsContainer.style.display = 'none';
+                    endBracketDiv.style.display = 'none';
+                    arrow.textContent = '▶';
+                }
+            };
+            // 组装
+            const headerDiv = document.createElement('div');
+            headerDiv.appendChild(arrow);
+            headerDiv.appendChild(bracketSpan);
+            parent.appendChild(headerDiv);
+            parent.appendChild(itemsContainer);
+            parent.appendChild(endBracketDiv);
+        }
+
+        /**
+         * JSON格式化:处理对象
+         * 创建可折叠的对象DOM结构，支持展开/收起功能
+         * @param {HTMLElement} parent - 父元素
+         * @param {Object} obj - 要处理的对象
+         */
+        function processObject(parent, obj) {
+            const keys = Object.keys(obj);
+            if (keys.length === 0) {
+                createAndAppendSpan(parent, '{}', 'json-bracket');
+                return;
+            }
+            // 折叠按钮
+            const arrow = document.createElement('span');
+            arrow.textContent = '▼';
+            arrow.className = 'json-arrow';
+            // 括号
+            const bracketSpan = document.createElement('span');
+            bracketSpan.textContent = '{';
+            bracketSpan.className = 'json-bracket';
+            // 属性容器
+            const propsContainer = document.createElement('div');
+            propsContainer.className = 'json-container';
+            keys.forEach((key, i) => {
+                const propDiv = document.createElement('div');
+                createAndAppendSpan(propDiv, `"${key}":`, 'json-key');
+                createAndAppendSpan(propDiv, ' ', null);
+                processValue(propDiv, obj[key]);
+                if (i < keys.length - 1) {
+                    createAndAppendSpan(propDiv, ',', 'json-bracket');
+                }
+                propsContainer.appendChild(propDiv);
+            });
+            // 结束括号
+            const endBracketDiv = document.createElement('div');
+            const endBracketSpan = document.createElement('span');
+            endBracketSpan.textContent = '}';
+            endBracketSpan.className = 'json-bracket';
+            endBracketDiv.appendChild(endBracketSpan);
+            // 折叠逻辑
+            arrow.onclick = function () {
+                if (propsContainer.style.display === 'none') {
+                    propsContainer.style.display = '';
+                    endBracketDiv.style.display = '';
+                    arrow.textContent = '▼';
+                } else {
+                    propsContainer.style.display = 'none';
+                    endBracketDiv.style.display = 'none';
+                    arrow.textContent = '▶';
+                }
+            };
+            // 组装
+            const headerDiv = document.createElement('div');
+            headerDiv.appendChild(arrow);
+            headerDiv.appendChild(bracketSpan);
+            parent.appendChild(headerDiv);
+            parent.appendChild(propsContainer);
+            parent.appendChild(endBracketDiv);
+        }
+
+        /**
+         * JSON格式化:创建并添加带样式的span
+         * 创建带样式的span元素并添加到父元素中
+         * @param {HTMLElement} parent - 父元素
+         * @param {string} content - 内容
+         * @param {string} className - CSS类名
+         * @param {boolean} newLine - 是否换行
+         */
+        function createAndAppendSpan(parent, content, className, newLine = false) {
+            const span = document.createElement('span');
+            span.textContent = content;
+            if (className) span.className = className;
+
+            if (newLine) {
+                const div = document.createElement('div');
+                div.appendChild(span);
+                parent.appendChild(div);
+            } else {
+                parent.appendChild(span);
+            }
+        }
+
+        /**
+         * SSE流式Fetch响应处理函数
+         * 处理fetch返回的SSE流式响应，实时显示数据
+         * @param {Response} response - fetch响应对象
+         * @returns {Promise<void>}
+         */
+        async function handleSSEFetchResponse(response) {
+            const responseInfo = document.getElementById('responseInfo');
+            const responseBody = document.getElementById('responseBody');
+            const responseHeadersTable = document.getElementById('responseHeaders')?.getElementsByTagName('tbody')[0];
+
+            if (responseInfo) responseInfo.innerHTML = 'SSE流式响应中...';
+
+            // 显示响应头
+            if (responseHeadersTable) {
+                responseHeadersTable.innerHTML = '';
+                response.headers.forEach((value, key) => {
+                    const row = responseHeadersTable.insertRow();
+                    row.insertCell(0).textContent = key;
+                    row.insertCell(1).textContent = value;
+                });
+            }
+
+            if (responseBody) responseBody.value = '';
+
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            let dataBuffer = '';
+            let result = '';
+
+            async function readStream() {
+                try {
+                    const { value, done } = await reader.read();
+
+                    if (done) {
+                        if (responseInfo) responseInfo.innerHTML = 'SSE流式响应已结束';
+                        return;
+                    }
+
+                    const chunk = decoder.decode(value, { stream: true });
+                    //console.log('收到数据块:', chunk);
+                    dataBuffer += chunk;
+
+                    // 处理SSE事件
+                    const lines = dataBuffer.split('\n');
+                    dataBuffer = lines.pop() || '';
+
+                    for (const line of lines) {
+                        const trimmedLine = line.trim();
+                        // console.log('处理行:', trimmedLine);
+
+                        // 显示所有非空行，不仅仅是data:开头的
+                        if (trimmedLine) {
+                            if (trimmedLine.startsWith('data:')) {
+                                const data = trimmedLine.slice(5).trim();
+                                if (data) {
+                                    result += data + '\n';
+                                    if (responseBody) responseBody.value = result;
+                                }
+                            } else {
+                                // 显示非标准SSE格式的行
+                                result += trimmedLine + '\n';
+                                if (responseBody) responseBody.value = result;
+                            }
+                        }
+                    }
+
+                    readStream();
+                } catch (err) {
+                    console.error('SSE读取错误:', err);
+                    if (responseInfo) responseInfo.innerHTML = 'SSE读取失败：' + err;
+                }
+            }
+
+            readStream();
+        }
+
+        /**
+         * 创建WebSocket消息体行
+         * 创建一个包含radio选择、类型选择、消息体输入、备注和删除按钮的WebSocket消息体行
+         * @returns {HTMLElement} 创建的WebSocket消息体行元素
+         */
+        function createWsBodyRow() {
+            const row = document.createElement('div');
+            row.className = 'body-row';
+            row.innerHTML = `
+                <input type="radio" name="wsBodyRadio">
+                <select class="ws-body-type">
+                    <option value="text">文本</option>
+                    <option value="binary">二进制(Base64)</option>
+                    <option value="file">文件</option>
+                </select>
+                <div class="ws-body-content">
+                    <textarea class="ws-body-text" placeholder="消息内容"></textarea>
+                    <input type="file" class="ws-body-file file-input-ws">
+                </div>
+                <textarea class="body-remark" placeholder="备注"></textarea>
+                <button class="remove-btn" type="button" onclick="removeWsBodyRow(this)">删除</button>
+            `;
+            // 类型切换
+            const typeSelect = row.querySelector('.ws-body-type');
+            const textArea = row.querySelector('.ws-body-text');
+            const fileInput = row.querySelector('.ws-body-file');
+            typeSelect.onchange = function () {
+                if (this.value === 'file') {
+                    textArea.style.display = 'none';
+                    fileInput.style.display = 'block';
+                } else {
+                    textArea.style.display = 'block';
+                    fileInput.style.display = 'none';
+                }
+            };
+            return row;
+        }
+
+        /**
+         * 添加WebSocket消息体行
+         * 在WebSocket消息体容器中添加一个新的消息体行，如果是第一行则自动选中
+         */
+        function addWsBodyRow() {
+            const container = document.getElementById('wsBodyRows');
+            const row = createWsBodyRow();
+            container.appendChild(row);
+            // 如果是第一行，自动选中
+            if (container.children.length === 1) {
+                row.querySelector('input[type="radio"]').checked = true;
+            }
+        }
+
+        /**
+         * 删除WebSocket消息体行
+         * 删除指定的消息体行，如果删除的是选中的行且还有其他行，则选中第一行
+         * @param {HTMLElement} btn - 删除按钮元素
+         */
+        function removeWsBodyRow(btn) {
+            const row = btn.closest('.body-row');
+            const container = document.getElementById('wsBodyRows');
+            const wasSelected = row.querySelector('input[type="radio"]').checked;
+            row.remove();
+            if (wasSelected && container.children.length > 0) {
+                container.children[0].querySelector('input[type="radio"]').checked = true;
+            }
+            if (container.children.length === 0) {
+                addWsBodyRow();
+            }
+        }
+
+        /**
+         * 发送WebSocket消息体
+         * 发送当前选中的WebSocket消息体行，根据类型处理（text直接发送，binary base64解码，file读取为二进制）
+         * @returns {Promise<void>}
+         */
+        async function sendWsBody() {
+            if (!currentWS || currentWS.readyState !== 1) {
+                alert('WebSocket未连接');
+                return;
+            }
+            const rows = document.querySelectorAll('#wsBodyRows .body-row');
+            let found = false;
+            for (const row of rows) {
+                if (row.querySelector('input[type="radio"]').checked) {
+                    found = true;
+                    const type = row.querySelector('.ws-body-type').value;
+                    if (type === 'text') {
+                        const val = row.querySelector('.ws-body-text').value;
+                        currentWS.send(val);
+                    } else if (type === 'binary') {
+                        const val = row.querySelector('.ws-body-text').value;
+                        try {
+                            const bin = Uint8Array.from(atob(val), c => c.charCodeAt(0));
+                            currentWS.send(bin);
+                        } catch (e) {
+                            alert('Base64解码失败');
+                        }
+                    } else if (type === 'file') {
+                        const fileInput = row.querySelector('.ws-body-file');
+                        if (fileInput.files.length > 0) {
+                            const file = fileInput.files[0];
+                            const buf = await file.arrayBuffer();
+                            currentWS.send(buf);
+                        } else {
+                            alert('请选择文件');
+                        }
+                    }
+                    break;
+                }
+            }
+            if (!found) alert('请选择要发送的消息行');
+        }
+
+        /**
+         * 页面初始化
+         * 在DOM加载完成后执行所有初始化操作
+         */
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                // 并行初始化所有组件
+                await Promise.all([
+                    addFormDataRow(),
+                    addFormRow(),
+                    loadGlobalHeaders(),
+                    updateHistoryDisplay(),
+                    updateApisDisplay(),
+                    loadVariables(),
+                    initUseProxy(),
+                    updateApiCollectionSelect()
+                ]);
+
+                // 恢复上次选中的标签页
+                const lastActiveTab = StorageManager.get('lastActiveTab', 'history');
+                switchPanelTab(lastActiveTab);
+            } catch (error) {
+                console.error('页面初始化失败:', error);
+            }
+        });
+
+    </script>
+</body>
+
+</html>
