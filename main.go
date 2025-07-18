@@ -756,7 +756,6 @@ func handleForward(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	forwardURL = ensureProtocol(forwardURL)
 	// 创建目标URL
 	targetURL, err := url.Parse(forwardURL)
 	if err != nil {
@@ -864,14 +863,6 @@ func handleForward(w http.ResponseWriter, r *http.Request) {
 	if _, err := io.Copy(w, resp.Body); err != nil {
 		http.Error(w, "复制响应体失败: "+err.Error(), http.StatusInternalServerError)
 	}
-}
-
-// ensureProtocol 解决直接输入域名的情况
-func ensureProtocol(urlStr string) string {
-	if !strings.HasPrefix(urlStr, "http://") && !strings.HasPrefix(urlStr, "https://") {
-		return "https://" + urlStr // 默认使用 https
-	}
-	return urlStr
 }
 
 // websocketForward 实现WebSocket双向转发功能
@@ -1998,6 +1989,12 @@ func handleWebSocketEchoRequest(w http.ResponseWriter, r *http.Request) {
 			}
 		}()
 
+		data, err := embeddedFS.ReadFile("favicon.ico")
+		if err != nil {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+
 		// default模式，恢复原有逻辑
 		for i := 0; i < wsCount; i++ {
 			msg := map[string]any{
@@ -2009,7 +2006,12 @@ func handleWebSocketEchoRequest(w http.ResponseWriter, r *http.Request) {
 				"ws_count": wsCount,
 			}
 			msgBytes, _ := json.Marshal(msg)
-			err := conn.WriteMessage(TextMessage, msgBytes)
+			var err error
+			if i%2 == 0 {
+				err = conn.WriteMessage(TextMessage, msgBytes)
+			} else {
+				err = conn.WriteMessage(BinaryMessage, data)
+			}
 			if err != nil {
 				logger.Error("WebSocket写入失败",
 					"remote_addr", r.RemoteAddr,
