@@ -1245,7 +1245,15 @@
     <div class="settings-dialog" id="settingsDialog">
         <h3>请求配置</h3>
         <div class="settings-group">
-            <!-- 新增5个配置项 -->
+
+            <label>缺省请求协议 (default_protocol)</label>
+            <select id="settingDefaultProtocol">
+                <option value="http">http</option>
+                <option value="https">https</option>
+                <option value="ws">ws</option>
+                <option value="wss">wss</option>
+            </select>
+
             <label>是否验证SSL (verify_ssl)</label>
             <select id="settingVerifySSL">
                 <option value="Y">Y - 验证SSL</option>
@@ -1807,6 +1815,14 @@
             return headers;
         }
 
+        function normalizeUrlWithProtocol(url, protocol) {
+            if (!url) return url;
+            // 只判断常用的四种协议
+            if (/^(https?|wss?):\/\//i.test(url)) return url;
+            if (url.startsWith('//')) return protocol + ':' + url;
+            return protocol + '://' + url;
+        }
+
         /**
          * 处理代理请求
          * 构建FormData并发送到代理服务器
@@ -2092,19 +2108,52 @@
             ws.onmessage = function (e) {
                 // 处理WS响应头
                 try {
-                    const obj = JSON.parse(e.data);
-                    if (obj.type === 'headers' && obj.headers) {
-                        updateWSResponseHeaders(obj.headers);
-                        return;
+                    if (typeof e.data === 'string') {
+                        const obj = JSON.parse(e.data);
+                        if (obj.type === 'headers' && obj.headers) {
+                            updateWSResponseHeaders(obj.headers);
+                            return;
+                        }
                     }
+
                 } catch (err) {
                     console.warn('解析WS响应头失败:', err);
                 }
 
                 // 处理普通消息
                 const responseBody = document.getElementById('responseBody');
-                if (responseBody) {
+                if (!responseBody) return;
+
+                if (typeof e.data === 'string') {
+                    // 文本消息
                     responseBody.value += e.data + '\n';
+                } else if (e.data instanceof Blob) {
+                    // Blob 类型，转为 base64 或 hex 或 utf-8 字符串
+                    const reader = new FileReader();
+                    reader.onload = function () {
+                        // 你可以选择显示为 base64、hex 或 utf-8
+                        // 这里是 base64
+                        /*
+                        const base64 = btoa(
+                            new Uint8Array(reader.result)
+                                .reduce((data, byte) => data + String.fromCharCode(byte), '')
+                        );
+                        responseBody.value += '[Blob] base64: ' + base64 + '\n';
+                        */
+                        responseBody.value += '[Blob] data\n';
+
+                    };
+                    reader.readAsArrayBuffer(e.data);
+                } else if (e.data instanceof ArrayBuffer) {
+                    // ArrayBuffer 类型，转为 hex 或 base64
+                    /*
+                    const arr = new Uint8Array(e.data);
+                    const hex = Array.from(arr).map(b => b.toString(16).padStart(2, '0')).join(' ');
+                    responseBody.value += '[ArrayBuffer] hex: ' + hex + '\n';
+                    */
+                    responseBody.value += '[ArrayBuffer] data\n';
+                } else {
+                    responseBody.value += '[Unknown WS message type]\n';
                 }
             };
 
@@ -2623,13 +2672,14 @@
 
                 // 替换URL中的变量
                 url = replaceVariables(url)?.trim() || '';
+                const settings = getRequestSettings();
+                url = normalizeUrlWithProtocol(url, settings.default_protocol);
                 if (!url) {
                     throw new Error('请输入有效的URL');
                 }
 
                 // 获取并处理请求头
                 const headers = await buildRequestHeaders();
-                const settings = getRequestSettings();
 
                 const requestOptions = {
                     method,
@@ -3905,7 +3955,7 @@
          */
         function loadSettings() {
             const currentSettings = getRequestSettings();
-
+            document.getElementById('settingDefaultProtocol').value = currentSettings.default_protocol || 'http';
             document.getElementById('settingVerifySSL').value = currentSettings.verify_ssl;
             document.getElementById('settingFollowRedirect').value = currentSettings.follow_redirect;
             document.getElementById('settingTimeout').value = currentSettings.timeout;
@@ -3931,7 +3981,7 @@
          */
         function saveSettings() {
             const settings = {
-
+                default_protocol: document.getElementById('settingDefaultProtocol').value,
                 verify_ssl: document.getElementById('settingVerifySSL').value,
                 follow_redirect: document.getElementById('settingFollowRedirect').value,
                 timeout: document.getElementById('settingTimeout').value,
@@ -3970,6 +4020,7 @@
                 referrer: 'about:client',
                 integrity: '',
                 keepalive: false,
+                default_protocol: 'http',
                 verify_ssl: 'N',
                 follow_redirect: 'N',
                 timeout: '0',
