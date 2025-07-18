@@ -756,6 +756,7 @@ func handleForward(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	forwardURL = ensureProtocol(forwardURL)
 	// 创建目标URL
 	targetURL, err := url.Parse(forwardURL)
 	if err != nil {
@@ -863,6 +864,14 @@ func handleForward(w http.ResponseWriter, r *http.Request) {
 	if _, err := io.Copy(w, resp.Body); err != nil {
 		http.Error(w, "复制响应体失败: "+err.Error(), http.StatusInternalServerError)
 	}
+}
+
+// ensureProtocol 解决直接输入域名的情况
+func ensureProtocol(urlStr string) string {
+	if !strings.HasPrefix(urlStr, "http://") && !strings.HasPrefix(urlStr, "https://") {
+		return "https://" + urlStr // 默认使用 https
+	}
+	return urlStr
 }
 
 // websocketForward 实现WebSocket双向转发功能
