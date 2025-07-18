@@ -108,7 +108,7 @@ var uploadDir = ""
 
 // embeddedFS 内嵌的前端文件系统，包含index.html和favicon.ico
 //
-//go:embed index.html tool.html favicon.ico readme.md
+//go:embed index.html tool.html favicon.ico README.md
 var embeddedFS embed.FS
 
 // logger 全局日志记录器
