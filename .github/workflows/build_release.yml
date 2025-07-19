@@ -8,10 +8,47 @@ on:
 jobs:
   build-release:
     runs-on: ubuntu-latest
-    name: Build and Release for Multiple OS
+    name: Build and Release for Multiple OS & Arch
     permissions:
       contents: write
     
+    strategy:
+      matrix:
+        include:
+          # Windows targets (64-bit only)
+          - os: windows
+            arch: amd64
+            goarm: ''
+            ext: .exe
+          - os: windows
+            arch: arm64
+            goarm: ''
+            ext: .exe
+          
+          # Linux targets (64-bit architectures)
+          - os: linux
+            arch: amd64
+            goarm: ''
+            ext: ''
+          - os: linux
+            arch: arm64
+            goarm: ''
+            ext: ''
+          - os: linux
+            arch: riscv64
+            goarm: ''
+            ext: ''
+          
+          # macOS targets (64-bit only)
+          - os: macos
+            arch: amd64
+            goarm: ''
+            ext: ''
+          - os: macos
+            arch: arm64
+            goarm: ''
+            ext: ''
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -21,27 +58,16 @@ jobs:
         with:
           go-version: '1.24'
 
-      - name: Build for Windows
+      - name: Build for ${{ matrix.os }} (${{ matrix.arch }})
+        env:
+          GOARM: ${{ matrix.goarm }}
         run: |
-          GOOS=windows GOARCH=amd64 go build -o webcurl.exe
-          zip -j webcurl-windows.zip webcurl.exe index.html tool.html
-
-      - name: Build for Linux
-        run: |
-          GOOS=linux GOARCH=amd64 go build -o webcurl
-          zip -j webcurl-linux.zip webcurl index.html tool.html
-
-      - name: Build for macOS
-        run: |
-          GOOS=darwin GOARCH=amd64 go build -o webcurl
-          zip -j webcurl-macos.zip webcurl index.html tool.html
+          GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} go build -o webcurl${{ matrix.ext }}
+          zip -j webcurl-${{ matrix.os }}-${{ matrix.arch }}.zip webcurl${{ matrix.ext }} index.html tool.html
 
       - name: Create Release and Upload Assets
         uses: softprops/action-gh-release@v2
         with:
           name: ${{ github.ref_name }}
           tag_name: ${{ github.ref_name }}
-          files: |
-            webcurl-windows.zip
-            webcurl-linux.zip
-            webcurl-macos.zip
+          files: webcurl-*.zip
