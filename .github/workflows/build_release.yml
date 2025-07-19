@@ -17,37 +17,37 @@ jobs:
         include:
           # Windows targets (64-bit only)
           - os: windows
+            goos: windows
             arch: amd64
-            goarm: ''
-            ext: .exe
+            suffix: .exe
           - os: windows
+            goos: windows
             arch: arm64
-            goarm: ''
-            ext: .exe
+            suffix: .exe
           
           # Linux targets (64-bit architectures)
           - os: linux
+            goos: linux
             arch: amd64
-            goarm: ''
-            ext: ''
+            suffix: ''
           - os: linux
+            goos: linux
             arch: arm64
-            goarm: ''
-            ext: ''
+            suffix: ''
           - os: linux
+            goos: linux
             arch: riscv64
-            goarm: ''
-            ext: ''
+            suffix: ''
           
-          # macOS targets (64-bit only)
+          # macOS targets (64-bit only) - CORRECTED: use "darwin" for GOOS
           - os: macos
+            goos: darwin
             arch: amd64
-            goarm: ''
-            ext: ''
+            suffix: ''
           - os: macos
+            goos: darwin
             arch: arm64
-            goarm: ''
-            ext: ''
+            suffix: ''
 
     steps:
       - name: Checkout code
@@ -59,11 +59,9 @@ jobs:
           go-version: '1.24'
 
       - name: Build for ${{ matrix.os }} (${{ matrix.arch }})
-        env:
-          GOARM: ${{ matrix.goarm }}
         run: |
-          GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} go build -o webcurl${{ matrix.ext }}
-          zip -j webcurl-${{ matrix.os }}-${{ matrix.arch }}.zip webcurl${{ matrix.ext }} index.html tool.html
+          GOOS=${{ matrix.goos }} GOARCH=${{ matrix.arch }} go build -o webcurl${{ matrix.suffix }}
+          zip -j webcurl-${{ matrix.os }}-${{ matrix.arch }}.zip webcurl${{ matrix.suffix }}
 
       - name: Create Release and Upload Assets
         uses: softprops/action-gh-release@v2
