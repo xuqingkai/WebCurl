@@ -56,11 +56,11 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.24'
+          go-version: '1.24.5'
 
       - name: Build for ${{ matrix.os }} (${{ matrix.arch }})
         run: |
-          GOOS=${{ matrix.goos }} GOARCH=${{ matrix.arch }} go build -o webcurl${{ matrix.suffix }}
+          CGO_ENABLED=0 GOOS=${{ matrix.goos }} GOARCH=${{ matrix.arch }} go build -o webcurl${{ matrix.suffix }}
           zip -j webcurl-${{ matrix.os }}-${{ matrix.arch }}.zip webcurl${{ matrix.suffix }}
 
       - name: Create Release and Upload Assets
