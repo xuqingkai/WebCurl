@@ -993,6 +993,12 @@
             padding: 8px 10px;
             font-size: 15px;
         }
+        .httpStatus2 {
+            background: #cfc;
+        }
+        .httpStatus5 {
+            background: #fcc;
+        }
     </style>
 </head>
 
@@ -1090,6 +1096,8 @@
         <div class="main-content">
             <div class="container">
                 <div class="request-section">
+                    <h2 id="requestTit" style="display: none;"></h2>
+                    <br>
                     <div class="url-section">
                         <button class="new-request-btn" onclick="newRequest()">新建</button>
                         <select id="httpMethod">
@@ -1105,15 +1113,17 @@
                             <option>WS</option>
                             <option>SSE</option>
                         </select>
-                        <input type="url" id="url" placeholder="输入请求URL" value="" />
-                        <button onclick="saveToApis()" class="btn-secondary">保存</button>
+                        <input type="url" id="url" placeholder="输入请求URL" value="" onblur="getUrlParam()" />
+                        <button id= "saveBtn" onclick="saveToApis(0)" class="btn-secondary" idx="">保存</button>
+                        <button id= "saveAsBtn" onclick="saveToApis(1)" class="btn-secondary" style="display: none;">另存</button>
                         <button id="downloadBtn" onclick="sendRequestAndDownload()" class="btn-secondary">下载</button>
                         <button id="sendBtn" onclick="sendRequest()">发送请求</button>
                     </div>
 
                     <div class="tabs">
-                        <div class="tab active" onclick="switchTab('headers')">请求头</div>
-                        <div class="tab" onclick="switchTab('body')">请求体</div>
+                        <div id="headersTit" class="tab active" onclick="switchTab('headers')">请求头</div>
+                        <div id="paramTit" class="tab" onclick="switchTab('param')">URL参数</div>
+                        <div id="bodyTit" class="tab" onclick="switchTab('body')">请求体</div>
                     </div>
 
                     <div id="headersTab" class="tab-content active">
@@ -1123,10 +1133,23 @@
                                 <input type="text" placeholder="Header名称" />
                                 <input type="text" placeholder="Header值" />
                                 <input type="text" placeholder="备注" class="header-remark input-remark" />
-                                <button class="remove-btn" onclick="removeHeader(this)">删除</button>
+                                <button class="remove-btn" onclick="removeParent(this)">删除</button>
                             </div>
                         </div>
                         <button onclick="addHeader()">添加请求头</button>
+                    </div>
+
+                    <div id="paramTab" class="tab-content">
+                        <div id="paramsList">
+                            <div class="header-row">
+                                <input type="checkbox" checked>
+                                <input type="text" placeholder="URL参数名称" />
+                                <input type="text" placeholder="URL参数值" />
+                                <input type="text" placeholder="备注" class="header-remark input-remark" />
+                                <button class="remove-btn" onclick="removeParent(this)">删除</button>
+                            </div>
+                        </div>
+                        <button onclick="addParam()">添加参数</button>
                     </div>
 
                     <div id="bodyTab" class="tab-content">
@@ -1210,10 +1233,10 @@
                 <div class="response-section">
                     <div class="response-info" id="responseInfo"></div>
                     <div class="response-tabs">
-                        <div class="response-tab active" onclick="switchResponseTab('headers')">响应头</div>
-                        <div class="response-tab" onclick="switchResponseTab('body')">响应体</div>
+                        <div class="response-tab" onclick="switchResponseTab('headers')">响应头</div>
+                        <div class="response-tab active" onclick="switchResponseTab('body')">响应体</div>
                     </div>
-                    <div id="headersContent" class="response-tab-content active">
+                    <div id="headersContent" class="response-tab-content">
                         <table class="headers-table" id="responseHeaders">
                             <thead>
                                 <tr>
@@ -1224,7 +1247,7 @@
                             <tbody></tbody>
                         </table>
                     </div>
-                    <div id="bodyContent" class="response-tab-content">
+                    <div id="bodyContent" class="response-tab-content active">
                         <div class="response-actions">
                             <button onclick="copyResponse()">复制响应内容</button>
                             <button onclick="clearResponse()">清空响应内容</button>
@@ -1354,6 +1377,12 @@
          */
         let useProxy = false;
 
+        /******* 基础方法区 start ********/
+        function byId(id) {
+            return document.getElementById(id);
+        }
+        /******* 基础方法区 end ********/
+
         /**
          * 初始化代理模式状态
          * 页面加载时请求 /api/mode 接口获取当前运行模式
@@ -1385,8 +1414,8 @@
             document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
             document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
 
-            const selectedTab = document.querySelector(`.tab:nth-child(${tabName === 'headers' ? '1' : '2'})`);
-            const selectedContent = document.getElementById(`${tabName}Tab`);
+            const selectedTab = byId(`${tabName}Tit`);
+            const selectedContent = byId(`${tabName}Tab`);
 
             selectedTab.classList.add('active');
             selectedContent.classList.add('active');
@@ -1404,16 +1433,60 @@
                 <input type="text" placeholder="Header名称"/>
                 <input type="text" placeholder="Header值"/>
                 <input type="text" placeholder="备注" class="header-remark input-remark"/>
-                <button class="remove-btn" onclick="removeHeader(this)">删除</button>
+                <button class="remove-btn" onclick="removeParent(this)">删除</button>
             `;
-            document.getElementById('headersList').appendChild(headerRow);
+            byId('headersList').appendChild(headerRow);
+        }
+
+        /**
+         * 添加URL参数
+         * 在URL参数列表中添加一个新的URL参数输入行
+         */
+        function addParam() {
+            const paramRow = getParamHtml("","");
+            byId('paramsList').appendChild(paramRow);
+        }
+
+        function getParamHtml(k, v){
+            const paramRow = document.createElement('div');
+            paramRow.className = 'header-row';
+            paramRow.innerHTML = `
+                <input type="checkbox" checked>
+                <input type="text" value = "${k}" placeholder="URL参数名称"/>
+                <input type="text" value = "${v}" placeholder="URL参数值"/>
+                <input type="text" placeholder="备注" class="header-remark input-remark"/>
+                <button class="remove-btn" onclick="removeParent(this)">删除</button>
+            `;
+            return paramRow;
+        }
+
+        /**
+         * 读取URL参数
+         * 读取URL参数到列表中添加一个URL参数输入行
+         */
+        function getUrlParam() {
+            switchTab('param');
+            const url = byId('url').value;
+            const idx = url.indexOf('?');
+            if(idx>=0){
+                // 清空原来的参数
+                byId('paramsList').innerHTML = '';
+                byId('url').value = url.substr(0,idx);
+                const params = url.substr(idx+1);
+                const paramsList = params.split('&');
+                for (let p of paramsList ){
+                    const ps = p.split("=");
+                    const paramRow = getParamHtml(ps[0],ps[1]);
+                    byId('paramsList').appendChild(paramRow);
+                }
+            }
         }
 
         /**
          * 删除请求头行
          * @param {HTMLElement} button - 删除按钮元素
          */
-        function removeHeader(button) {
+        function removeParent(button) {
             button.parentElement.remove();
         }
 
@@ -1423,13 +1496,13 @@
          * @param {string} type - 请求体类型，可选值：'none', 'json', 'text', 'binary', 'form', 'formdata', 'websocket'
          */
         function updateBodyType(type) {
-            const jsonBodyContainer = document.getElementById('jsonBodyContainer');
-            const textBodyContainer = document.getElementById('textBodyContainer');
-            const binaryBodyContainer = document.getElementById('binaryBodyContainer');
-            const formDataContainer = document.getElementById('formDataContainer');
-            const formContainer = document.getElementById('formContainer');
-            const wsControls = document.getElementById('wsControls');
-            const wsBodyContainer = document.getElementById('wsBodyContainer');
+            const jsonBodyContainer = byId('jsonBodyContainer');
+            const textBodyContainer = byId('textBodyContainer');
+            const binaryBodyContainer = byId('binaryBodyContainer');
+            const formDataContainer = byId('formDataContainer');
+            const formContainer = byId('formContainer');
+            const wsControls = byId('wsControls');
+            const wsBodyContainer = byId('wsBodyContainer');
 
             // 隐藏所有容器
             jsonBodyContainer.style.display = 'none';
@@ -1444,21 +1517,21 @@
                 case 'json':
                     jsonBodyContainer.style.display = 'block';
                     // 如果没有行，添加一个默认行
-                    if (document.getElementById('jsonBodyRows').children.length === 0) {
+                    if (byId('jsonBodyRows').children.length === 0) {
                         addJsonBodyRow();
                     }
                     break;
                 case 'text':
                     textBodyContainer.style.display = 'block';
                     // 如果没有行，添加一个默认行
-                    if (document.getElementById('textBodyRows').children.length === 0) {
+                    if (byId('textBodyRows').children.length === 0) {
                         addTextBodyRow();
                     }
                     break;
                 case 'binary':
                     binaryBodyContainer.style.display = 'block';
                     // 如果没有行，添加一个默认行
-                    if (document.getElementById('binaryBodyRows').children.length === 0) {
+                    if (byId('binaryBodyRows').children.length === 0) {
                         addBinaryBodyRow();
                     }
                     break;
@@ -1470,7 +1543,7 @@
                     break;
                 case 'websocket':
                     wsBodyContainer.style.display = 'block';
-                    if (document.getElementById('wsBodyRows').children.length === 0) {
+                    if (byId('wsBodyRows').children.length === 0) {
                         addWsBodyRow();
                     }
                     break;
@@ -1583,7 +1656,7 @@
          * 在JSON请求体容器中添加一个新的JSON请求体行，如果是第一行则自动选中
          */
         function addJsonBodyRow() {
-            const container = document.getElementById('jsonBodyRows');
+            const container = byId('jsonBodyRows');
             const row = createJsonBodyRow();
             container.appendChild(row);
             // 如果是第一行，自动选中
@@ -1597,7 +1670,7 @@
          * 在Text请求体容器中添加一个新的Text请求体行，如果是第一行则自动选中
          */
         function addTextBodyRow() {
-            const container = document.getElementById('textBodyRows');
+            const container = byId('textBodyRows');
             const row = createTextBodyRow();
             container.appendChild(row);
             // 如果是第一行，自动选中
@@ -1611,7 +1684,7 @@
          * 在Binary请求体容器中添加一个新的Binary请求体行，如果是第一行则自动选中
          */
         function addBinaryBodyRow() {
-            const container = document.getElementById('binaryBodyRows');
+            const container = byId('binaryBodyRows');
             const row = createBinaryBodyRow();
             container.appendChild(row);
             // 如果是第一行，自动选中
@@ -1686,7 +1759,7 @@
          * 在FormData容器中添加一个新的FormData行
          */
         function addFormDataRow() {
-            const container = document.getElementById('formDataRows');
+            const container = byId('formDataRows');
             const row = createFormDataRow();
             container.appendChild(row);
         }
@@ -1736,7 +1809,7 @@
                 <input type="text" placeholder="备注" class="form-remark input-remark"/>
                 <button class="remove-btn" onclick="removeFormRow(this)">删除</button>
             `;
-            document.getElementById('formRows').appendChild(formRow);
+            byId('formRows').appendChild(formRow);
         }
 
         /**
@@ -1754,6 +1827,37 @@
         function getBodyType() {
             const checkedRadio = document.querySelector('input[name="bodyType"]:checked');
             return checkedRadio ? checkedRadio.value : 'none';
+        }
+
+         /**
+         * 构建URL参数
+         * 获取并处理用户自定义URL参数
+         * @returns {string} 处理后的URL参数字符串
+         */
+         function buildUrlParams() {
+            // 获取用户自定义URL参数
+            let customParams = "?";
+            document.querySelectorAll('#paramsList div').forEach(row => {
+                const inputs = row.getElementsByTagName('input');
+                const isEnabled = inputs[0]?.checked;
+                const key = inputs[1]?.value;
+                const value = inputs[2]?.value;
+
+                if (isEnabled && key) {
+                    // 替换URL参数的key和value中的变量
+                    const normalizedKey = replaceVariables(key)?.trim();
+                    const normalizedValue = replaceVariables(value || '')?.trim();
+
+                    // 验证URL参数名称
+                    if (normalizedKey) {
+                        if (!/^[a-zA-Z0-9\-]+$/.test(normalizedKey)) {
+                            throw new Error(`无效的URL参数名称: ${normalizedKey}`);
+                        }
+                        customParams += normalizedKey + '=' + encodeURIComponent(normalizedValue) + '&';
+                    }
+                }
+            });
+            return customParams.length > 1 ? customParams.slice(0, -1) : '';
         }
 
         /**
@@ -1879,7 +1983,7 @@
                 }
 
                 await updateResponseHeaders(response);
-                saveRequestToHistory();
+                saveRequestToHistory(response.status);
             } catch (error) {
                 await handleRequestError(error);
             }
@@ -1964,7 +2068,7 @@
          * @returns {Promise<void>}
          */
         async function updateResponseHeaders(response) {
-            const responseHeadersTable = document.getElementById('responseHeaders')?.getElementsByTagName('tbody')[0];
+            const responseHeadersTable = byId('responseHeaders')?.getElementsByTagName('tbody')[0];
             if (!responseHeadersTable) return;
 
             responseHeadersTable.innerHTML = '';
@@ -1997,9 +2101,9 @@
          * @returns {Promise<void>}
          */
         async function handleRequestError(error) {
-            const responseInfo = document.getElementById('responseInfo');
-            const responseBody = document.getElementById('responseBody');
-            const responseHeaders = document.getElementById('responseHeaders');
+            const responseInfo = byId('responseInfo');
+            const responseBody = byId('responseBody');
+            const responseHeaders = byId('responseHeaders');
 
             if (responseInfo) {
                 responseInfo.innerHTML = `请求错误: ${error.message}`;
@@ -2035,9 +2139,9 @@
             }
 
             // 清空响应区域
-            const responseInfo = document.getElementById('responseInfo');
-            const responseBody = document.getElementById('responseBody');
-            const responseHeaders = document.getElementById('responseHeaders');
+            const responseInfo = byId('responseInfo');
+            const responseBody = byId('responseBody');
+            const responseHeaders = byId('responseHeaders');
 
             if (responseInfo) responseInfo.innerHTML = '';
             if (responseBody) responseBody.value = '';
@@ -2094,11 +2198,11 @@
             const ws = new WebSocket(wsUrl);
             currentWS = ws;
 
-            const responseBody = document.getElementById('responseBody');
+            const responseBody = byId('responseBody');
             if (responseBody) responseBody.value = '';
 
             ws.onopen = function () {
-                const responseInfo = document.getElementById('responseInfo');
+                const responseInfo = byId('responseInfo');
                 if (responseInfo) {
                     responseInfo.innerHTML = 'WebSocket 连接已建立';
                 }
@@ -2121,7 +2225,7 @@
                 }
 
                 // 处理普通消息
-                const responseBody = document.getElementById('responseBody');
+                const responseBody = byId('responseBody');
                 if (!responseBody) return;
 
                 if (typeof e.data === 'string') {
@@ -2158,14 +2262,14 @@
             };
 
             ws.onerror = function (e) {
-                const responseInfo = document.getElementById('responseInfo');
+                const responseInfo = byId('responseInfo');
                 if (responseInfo) {
                     responseInfo.innerHTML = 'WebSocket 错误';
                 }
             };
 
             ws.onclose = function () {
-                const responseInfo = document.getElementById('responseInfo');
+                const responseInfo = byId('responseInfo');
                 if (responseInfo) {
                     responseInfo.innerHTML = 'WebSocket 连接已关闭';
                 }
@@ -2186,10 +2290,10 @@
             const es = new EventSource(sseUrl);
             currentSSE = es;
 
-            const responseBody = document.getElementById('responseBody');
+            const responseBody = byId('responseBody');
             if (responseBody) responseBody.value = '';
 
-            const responseInfo = document.getElementById('responseInfo');
+            const responseInfo = byId('responseInfo');
             if (responseInfo) {
                 responseInfo.innerHTML = 'SSE 连接已建立';
             }
@@ -2206,7 +2310,7 @@
             });
 
             es.onmessage = function (e) {
-                const responseBody = document.getElementById('responseBody');
+                const responseBody = byId('responseBody');
                 if (responseBody) {
                     responseBody.value += `[message] ${e.data || ''}\n`;
                 }
@@ -2219,7 +2323,7 @@
                 sseEventTypeList.forEach(type => {
                     if (type && type !== 'message' && type !== 'x-web-curl-headers') {
                         es.addEventListener(type, function (e) {
-                            const responseBody = document.getElementById('responseBody');
+                            const responseBody = byId('responseBody');
                             if (responseBody) {
                                 responseBody.value += `[${type}] ${e.data || ''}\n`;
                             }
@@ -2229,7 +2333,7 @@
             }
 
             es.onerror = function (e) {
-                const responseInfo = document.getElementById('responseInfo');
+                const responseInfo = byId('responseInfo');
                 if (responseInfo) {
                     responseInfo.innerHTML = 'SSE 连接已关闭';
                 }
@@ -2243,7 +2347,7 @@
          * @param {Object} headers - 响应头对象
          */
         function updateWSResponseHeaders(headers) {
-            const responseHeadersTable = document.getElementById('responseHeaders')?.getElementsByTagName('tbody')[0];
+            const responseHeadersTable = byId('responseHeaders')?.getElementsByTagName('tbody')[0];
             if (!responseHeadersTable) return;
 
             responseHeadersTable.innerHTML = '';
@@ -2292,9 +2396,9 @@
          * @param {WebSocket} ws - WebSocket实例
          */
         function bindWSButtons(ws) {
-            const wsSendBtn = document.getElementById('wsSendBtn');
-            const wsCloseBtn = document.getElementById('wsCloseBtn');
-            const wsSendInput = document.getElementById('wsSendInput');
+            const wsSendBtn = byId('wsSendBtn');
+            const wsCloseBtn = byId('wsCloseBtn');
+            const wsSendInput = byId('wsSendInput');
 
             if (wsSendBtn) {
                 wsSendBtn.onclick = function () {
@@ -2452,8 +2556,8 @@
             URL.revokeObjectURL(downloadUrl);
             document.body.removeChild(a);
 
-            const responseInfo = document.getElementById('responseInfo');
-            const responseBody = document.getElementById('responseBody');
+            const responseInfo = byId('responseInfo');
+            const responseBody = byId('responseBody');
 
             if (responseInfo) {
                 responseInfo.innerHTML = `
@@ -2462,6 +2566,7 @@
                     文件大小: ${(blob.size / 1024).toFixed(2)} KB<br>
                     内容类型: ${contentType || '未指定'}<br>
                 `;
+                responseInfo.classList = 'response-info httpStatus'+(response.status + "").substr(0, 1);
             }
 
             if (responseBody) {
@@ -2478,8 +2583,8 @@
          * @returns {Promise<void>}
          */
         async function handleNormalResponse(response, duration, contentType) {
-            const responseInfo = document.getElementById('responseInfo');
-            const responseBody = document.getElementById('responseBody');
+            const responseInfo = byId('responseInfo');
+            const responseBody = byId('responseBody');
 
             if (responseInfo) {
                 responseInfo.innerHTML = `
@@ -2487,6 +2592,7 @@
                     响应时间: ${duration}ms<br>
                     内容类型: ${contentType || '未指定'}<br>
                 `;
+                responseInfo.classList = 'response-info httpStatus'+(response.status + "").substr(0, 1);
             }
 
             // 重置JSON格式化状态
@@ -2541,10 +2647,10 @@
          */
         function resetJsonFormatState() {
             const elements = {
-                container: document.getElementById('jsonFormattedContainer'),
-                textarea: document.getElementById('responseBody'),
-                formatBtn: document.getElementById('formatJsonBtn'),
-                copyBtn: document.getElementById('copyFormattedBtn')
+                container: byId('jsonFormattedContainer'),
+                textarea: byId('responseBody'),
+                formatBtn: byId('formatJsonBtn'),
+                copyBtn: byId('copyFormattedBtn')
             };
 
             if (elements.container) elements.container.style.display = 'none';
@@ -2560,7 +2666,7 @@
          * 当检测到响应为JSON格式时显示格式化按钮
          */
         function showJsonFormatButton() {
-            const formatJsonBtn = document.getElementById('formatJsonBtn');
+            const formatJsonBtn = byId('formatJsonBtn');
             if (formatJsonBtn) {
                 formatJsonBtn.style.display = 'inline-block';
             }
@@ -2619,8 +2725,8 @@
          * @param {boolean} loading - 是否处于加载状态
          */
         function setRequestButtonsState(loading) {
-            const sendBtn = document.getElementById('sendBtn');
-            const downloadBtn = document.getElementById('downloadBtn');
+            const sendBtn = byId('sendBtn');
+            const downloadBtn = byId('downloadBtn');
 
             if (sendBtn) {
                 sendBtn.disabled = loading;
@@ -2659,8 +2765,8 @@
 
             try {
                 // 获取基本请求信息
-                const methodElement = document.getElementById('httpMethod');
-                const urlElement = document.getElementById('url');
+                const methodElement = byId('httpMethod');
+                const urlElement = byId('url');
 
                 if (!methodElement || !urlElement) {
                     throw new Error('无法获取请求方法或URL');
@@ -2677,6 +2783,10 @@
                 if (!url) {
                     throw new Error('请输入有效的URL');
                 }
+
+                // 追加url参数（如果有）
+                const urlParams = buildUrlParams();
+                url += urlParams;
 
                 // 获取并处理请求头
                 const headers = await buildRequestHeaders();
@@ -2722,7 +2832,7 @@
                 }
 
                 await updateResponseHeaders(response);
-                saveRequestToHistory();
+                saveRequestToHistory(response.status);
             } catch (error) {
                 await handleRequestError(error);
             } finally {
@@ -2750,7 +2860,7 @@
             document.querySelectorAll('.response-tab-content').forEach(content => content.classList.remove('active'));
 
             const selectedTab = document.querySelector(`.response-tab:nth-child(${tabName === 'headers' ? '1' : '2'})`);
-            const selectedContent = document.getElementById(`${tabName}Content`);
+            const selectedContent = byId(`${tabName}Content`);
 
             selectedTab.classList.add('active');
             selectedContent.classList.add('active');
@@ -2760,7 +2870,7 @@
          * 复制响应内容到剪贴板
          */
         async function copyResponse() {
-            const responseBody = document.getElementById('responseBody');
+            const responseBody = byId('responseBody');
             if (!responseBody?.value) return;
 
             try {
@@ -2776,11 +2886,14 @@
          * 清空响应信息、响应体、响应头，并断开WS/SSE连接
          */
         function clearResponse() {
-            const responseInfo = document.getElementById('responseInfo');
-            const responseBody = document.getElementById('responseBody');
-            const responseHeaders = document.getElementById('responseHeaders');
+            const responseInfo = byId('responseInfo');
+            const responseBody = byId('responseBody');
+            const responseHeaders = byId('responseHeaders');
 
-            if (responseInfo) responseInfo.innerHTML = '';
+            if (responseInfo) {
+                responseInfo.innerHTML = '';
+                responseInfo.classList = 'response-info';
+            }
             if (responseBody) responseBody.value = '';
             if (responseHeaders) {
                 const tbody = responseHeaders.getElementsByTagName('tbody')[0];
@@ -2816,9 +2929,9 @@
          * 保存当前请求到历史记录
          * 将当前请求的所有信息（方法、URL、请求头、请求体）保存到localStorage
          */
-        function saveRequestToHistory() {
-            const method = document.getElementById('httpMethod').value;
-            const url = document.getElementById('url').value;
+        function saveRequestToHistory(httpStatus) {
+            const method = byId('httpMethod').value;
+            const url = byId('url').value;
             const bodyType = getBodyType();
 
             // 获取请求头
@@ -2829,6 +2942,24 @@
                 // 只要有key就保存
                 if (inputs[1].value) {
                     headers[inputs[1].value] = {
+                        // 如果value为空，使用空字符串
+                        value: inputs[2].value || '',
+                        // 保存复选框状态
+                        enabled: isEnabled,
+                        // 保存备注
+                        remark: inputs[3].value || ''
+                    };
+                }
+            });
+
+            // 获取请求头
+            const params = {};
+            document.querySelectorAll('#paramsList div').forEach(row => {
+                const inputs = row.getElementsByTagName('input');
+                const isEnabled = inputs[0].checked;
+                // 只要有key就保存
+                if (inputs[1].value) {
+                    params[inputs[1].value] = {
                         // 如果value为空，使用空字符串
                         value: inputs[2].value || '',
                         // 保存复选框状态
@@ -2938,16 +3069,20 @@
                 body = { type: 'websocket', data: wsBodyItems };
             } else if (bodyType !== 'none') {
                 // 对于其他类型的请求体，尝试从多行结构中获取
-                body = { type: bodyType, data: document.getElementById('requestBody').value };
+                body = { type: bodyType, data: byId('requestBody').value };
             }
 
             const historyItem = {
                 method,
                 url,
                 headers,
+                params,
                 body,
                 timestamp: new Date().toISOString()
             };
+            if(httpStatus != undefined){
+                historyItem.httpStatus = httpStatus+'';
+            }
 
             // 获取现有历史记录
             let history = StorageManager.get('requestHistory', []);
@@ -2967,12 +3102,28 @@
             updateHistoryDisplay();
         }
 
+        /** 
+         * 设置请求按钮和标题
+         */
+        function setRequestBtnAndTit(saveTit, idx, name, nameShow, asShow){
+            byId('saveBtn').innerText = saveTit;
+            byId('saveBtn').idx = idx;
+            byId('requestTit').innerText = name;
+            byId('requestTit').style.display = nameShow;
+            byId('saveAsBtn').style.display = asShow;
+        }
         /**
-         * 从历史记录加载请求
+         * 从保存的集合或历史记录加载请求
          * 将历史记录中的请求信息恢复到当前界面
          * @param {Object} historyItem - 历史记录项
          */
-        function loadRequestFromHistory(historyItem) {
+        function loadRequestFromHistory(historyItem, idx) {
+            // 如果idx不为空设置保存值并添加另存为按钮
+            if (idx != undefined) {
+                setRequestBtnAndTit("更新", idx, historyItem.name, 'block', 'block');
+            } else {
+                setRequestBtnAndTit("保存", undefined, '', 'none', 'none');
+            }
             // 添加数据有效性检查
             if (!historyItem || typeof historyItem !== 'object') {
                 console.error('无效的历史记录数据');
@@ -2981,11 +3132,11 @@
 
             try {
                 // 设置请求方法和URL
-                document.getElementById('httpMethod').value = historyItem.method || 'GET';
-                document.getElementById('url').value = historyItem.url || '';
+                byId('httpMethod').value = historyItem.method || 'GET';
+                byId('url').value = historyItem.url || '';
 
                 // 设置请求头
-                const headersList = document.getElementById('headersList');
+                const headersList = byId('headersList');
                 headersList.innerHTML = '';
                 if (historyItem.headers && typeof historyItem.headers === 'object') {
                     Object.entries(historyItem.headers).forEach(([key, headerData]) => {
@@ -3000,7 +3151,7 @@
                                 <input type="text" placeholder="Header名称" value="${key}"/>
                                 <input type="text" placeholder="Header值" value="${value}"/>
                                 <input type="text" placeholder="备注" class="header-remark input-remark" value="${headerData.remark}"/>
-                                <button class="remove-btn" onclick="removeHeader(this)">删除</button>
+                                <button class="remove-btn" onclick="removeParent(this)">删除</button>
                             `;
                             headersList.appendChild(headerRow);
                         }
@@ -3009,6 +3160,33 @@
                 if (!headersList.children.length) {
                     // 添加一个空的请求头行
                     addHeader();
+                }
+
+                // 设置URL参数
+                const paramsList = byId('paramsList');
+                paramsList.innerHTML = '';
+                if (historyItem.params && typeof historyItem.params === 'object') {
+                    Object.entries(historyItem.params).forEach(([key, paramData]) => {
+                        // 添加键值有效性检查
+                        if (key) {
+                            const paramRow = document.createElement('div');
+                            paramRow.className = 'header-row';
+                            const isEnabled = typeof paramData === 'object' ? paramData.enabled : true;
+                            const value = typeof paramData === 'object' ? paramData.value : paramData;
+                            paramRow.innerHTML = `
+                                <input type="checkbox" ${isEnabled ? 'checked' : ''}>
+                                <input type="text" placeholder="URL参数名称" value="${key}"/>
+                                <input type="text" placeholder="URL参数值" value="${value}"/>
+                                <input type="text" placeholder="备注" class="header-remark input-remark" value="${paramData.remark}"/>
+                                <button class="remove-btn" onclick="removeParent(this)">删除</button>
+                            `;
+                            paramsList.appendChild(paramRow);
+                        }
+                    });
+                }
+                if (!paramsList.children.length) {
+                    // 添加一个空的URL参数行
+                    addParam();
                 }
 
                 // 设置请求体
@@ -3020,7 +3198,7 @@
                         updateBodyType(bodyType);
 
                         if (bodyType === 'form' && historyItem.body.data && typeof historyItem.body.data === 'object') {
-                            const formRows = document.getElementById('formRows');
+                            const formRows = byId('formRows');
                             formRows.innerHTML = '';
                             Object.entries(historyItem.body.data).forEach(([key, formData]) => {
                                 // 添加键值有效性检查
@@ -3040,7 +3218,7 @@
                                 }
                             });
                         } else if (bodyType === 'formdata' && Array.isArray(historyItem.body.data)) {
-                            const formDataRows = document.getElementById('formDataRows');
+                            const formDataRows = byId('formDataRows');
                             formDataRows.innerHTML = '';
                             historyItem.body.data.forEach(item => {
                                 // 添加数据有效性检查
@@ -3061,7 +3239,7 @@
                                 }
                             });
                         } else if (bodyType === 'json' && Array.isArray(historyItem.body.data)) {
-                            const jsonBodyRows = document.getElementById('jsonBodyRows');
+                            const jsonBodyRows = byId('jsonBodyRows');
                             jsonBodyRows.innerHTML = '';
                             historyItem.body.data.forEach(item => {
                                 if (item && typeof item === 'object') {
@@ -3073,7 +3251,7 @@
                                 }
                             });
                         } else if (bodyType === 'text' && Array.isArray(historyItem.body.data)) {
-                            const textBodyRows = document.getElementById('textBodyRows');
+                            const textBodyRows = byId('textBodyRows');
                             textBodyRows.innerHTML = '';
                             historyItem.body.data.forEach(item => {
                                 if (item && typeof item === 'object') {
@@ -3085,7 +3263,7 @@
                                 }
                             });
                         } else if (bodyType === 'binary' && Array.isArray(historyItem.body.data)) {
-                            const binaryBodyRows = document.getElementById('binaryBodyRows');
+                            const binaryBodyRows = byId('binaryBodyRows');
                             binaryBodyRows.innerHTML = '';
                             historyItem.body.data.forEach(item => {
                                 if (item && typeof item === 'object') {
@@ -3097,7 +3275,7 @@
                                 }
                             });
                         } else if (['json', 'text'].includes(bodyType) && historyItem.body.data !== undefined) {
-                            document.getElementById('requestBody').value = historyItem.body.data;
+                            byId('requestBody').value = historyItem.body.data;
                         }
                     }
                 } else {
@@ -3119,16 +3297,20 @@
          * 从localStorage读取历史记录并在页面上显示
          */
         function updateHistoryDisplay() {
-            const historyList = document.getElementById('historyList');
+            const historyList = byId('historyList');
             const history = StorageManager.get('requestHistory', []);
 
             historyList.innerHTML = history.map((item, index) => {
                 const date = new Date(item.timestamp);
                 const formattedDate = date.toLocaleString('zh-CN');
+                let httpStatusCls = '';
+                if(item.httpStatus != undefined){
+                    httpStatusCls = "httpStatus"+item.httpStatus.substr(0,1);
+                }
                 // 将历史记录项存储在一个自定义属性中
                 const safeItem = JSON.stringify(item).replace(/'/g, '&#39;').replace(/"/g, '&quot;');
                 return `
-                    <div class="history-item">
+                    <div class="history-item ${httpStatusCls}">
                         <div class="history-time">${formattedDate}</div>
                         <div>
                             <span class="history-method">${item.method}</span>
@@ -3263,12 +3445,17 @@
          * 保存当前请求到接口列表
          * 将当前请求保存到选中的接口集合中
          */
-        function saveToApis() {
-            const name = prompt('请输入接口名称：');
-            if (!name) return;
-
-            const method = document.getElementById('httpMethod').value;
-            const url = document.getElementById('url').value;
+        function saveToApis(isSaveAs) {
+            const idx = byId('saveBtn').idx;
+            let name;
+            if(isSaveAs || idx === undefined) {
+                name = prompt('请输入接口名称：');
+                if (!name) return;
+            } else {
+                name = byId('requestTit').innerText;
+            }
+            const method = byId('httpMethod').value;
+            const url = byId('url').value;
             const bodyType = getBodyType();
 
             // 获取请求头
@@ -3278,6 +3465,20 @@
                 const isEnabled = inputs[0].checked;
                 if (inputs[1].value) {
                     headers[inputs[1].value] = {
+                        value: inputs[2].value || '',
+                        enabled: isEnabled,
+                        remark: inputs[3].value || ''
+                    };
+                }
+            });
+
+            // 获取URL参数
+            const params = {};
+            document.querySelectorAll('#paramsList div').forEach(row => {
+                const inputs = row.getElementsByTagName('input');
+                const isEnabled = inputs[0].checked;
+                if (inputs[1].value) {
+                    params[inputs[1].value] = {
                         value: inputs[2].value || '',
                         enabled: isEnabled,
                         remark: inputs[3].value || ''
@@ -3378,7 +3579,7 @@
                 });
                 body = { type: 'websocket', data: wsBodyItems };
             } else if (bodyType !== 'none') {
-                body = { type: bodyType, data: document.getElementById('requestBody').value };
+                body = { type: bodyType, data: byId('requestBody').value };
             }
 
             const apiItem = {
@@ -3386,6 +3587,7 @@
                 method,
                 url,
                 headers,
+                params,
                 body,
                 timestamp: new Date().toISOString()
             };
@@ -3398,7 +3600,13 @@
                 collection = { name: current, apis: [] };
                 collections.push(collection);
             }
-            collection.apis.unshift(apiItem);
+            if(isSaveAs || idx === undefined){ // 如果idx存在，则更新对应索引的api
+                collection.apis.unshift(apiItem);
+                loadRequestFromHistory(apiItem, 0);
+            } else {
+                collection.apis[idx] = apiItem;
+                loadRequestFromHistory(apiItem, idx);
+            }
             setApiCollections(collections);
             updateApisDisplay();
             switchPanelTab('apis');
@@ -3409,7 +3617,7 @@
          * 从localStorage读取接口列表并在页面上显示
          */
         function updateApisDisplay() {
-            const apisList = document.getElementById('apisList');
+            const apisList = byId('apisList');
             const collections = getApiCollections();
             const current = getCurrentCollectionName();
             const collection = collections.find(c => c.name === current);
@@ -3431,10 +3639,10 @@
                     </div>
                 `;
             }).join('');
-            document.querySelectorAll('#apisList .history-load-btn').forEach(button => {
+            document.querySelectorAll('#apisList .history-load-btn').forEach((button,idx) => {
                 button.addEventListener('click', function () {
                     const apiItem = JSON.parse(this.dataset.api);
-                    loadRequestFromHistory(apiItem);
+                    loadRequestFromHistory(apiItem, idx);
                 });
             });
             updateApiCollectionSelect();
@@ -3551,7 +3759,7 @@
          * 在变量表格中添加一个新的变量行
          */
         function addVariableRow() {
-            const tbody = document.getElementById('variablesTableBody');
+            const tbody = byId('variablesTableBody');
             const row = document.createElement('tr');
             row.innerHTML = `
                 <td><input type="checkbox" checked></td>
@@ -3623,7 +3831,7 @@
          */
         function loadVariables() {
             const envConf = StorageManager.get('env_conf', []);
-            const tbody = document.getElementById('variablesTableBody');
+            const tbody = byId('variablesTableBody');
             tbody.innerHTML = '';
 
             envConf.forEach(item => {
@@ -3753,7 +3961,7 @@
          * 在全局请求头表格中添加一个新的请求头行
          */
         function addGlobalHeaderRow() {
-            const tbody = document.getElementById('globalHeadersTableBody');
+            const tbody = byId('globalHeadersTableBody');
             const row = document.createElement('tr');
             row.innerHTML = `
                 <td><input type="checkbox" checked></td>
@@ -3819,7 +4027,7 @@
          */
         function loadGlobalHeaders() {
             const headerConf = StorageManager.get('header_conf', []);
-            const tbody = document.getElementById('globalHeadersTableBody');
+            const tbody = byId('globalHeadersTableBody');
             tbody.innerHTML = '';
 
             headerConf.forEach(item => {
@@ -3935,8 +4143,8 @@
          * 显示请求配置设置对话框
          */
         function openSettings() {
-            document.getElementById('dialogOverlay').style.display = 'block';
-            document.getElementById('settingsDialog').style.display = 'block';
+            byId('dialogOverlay').style.display = 'block';
+            byId('settingsDialog').style.display = 'block';
             loadSettings();
         }
 
@@ -3945,8 +4153,8 @@
          * 隐藏请求配置设置对话框
          */
         function closeSettings() {
-            document.getElementById('dialogOverlay').style.display = 'none';
-            document.getElementById('settingsDialog').style.display = 'none';
+            byId('dialogOverlay').style.display = 'none';
+            byId('settingsDialog').style.display = 'none';
         }
 
         /**
@@ -3955,23 +4163,23 @@
          */
         function loadSettings() {
             const currentSettings = getRequestSettings();
-            document.getElementById('settingDefaultProtocol').value = currentSettings.default_protocol || 'http';
-            document.getElementById('settingVerifySSL').value = currentSettings.verify_ssl;
-            document.getElementById('settingFollowRedirect').value = currentSettings.follow_redirect;
-            document.getElementById('settingTimeout').value = currentSettings.timeout;
-            document.getElementById('settingRetryCount').value = currentSettings.retry_count;
-            document.getElementById('settingRetryDelay').value = currentSettings.retry_delay;
-            document.getElementById('settingSseEventTypes').value = currentSettings.sse_event_types || '';
+            byId('settingDefaultProtocol').value = currentSettings.default_protocol || 'http';
+            byId('settingVerifySSL').value = currentSettings.verify_ssl;
+            byId('settingFollowRedirect').value = currentSettings.follow_redirect;
+            byId('settingTimeout').value = currentSettings.timeout;
+            byId('settingRetryCount').value = currentSettings.retry_count;
+            byId('settingRetryDelay').value = currentSettings.retry_delay;
+            byId('settingSseEventTypes').value = currentSettings.sse_event_types || '';
 
-            document.getElementById('settingCache').value = currentSettings.cache;
-            document.getElementById('settingMode').value = currentSettings.mode;
-            document.getElementById('settingCredentials').value = currentSettings.credentials;
-            document.getElementById('settingRedirect').value = currentSettings.redirect;
-            document.getElementById('settingReferrerPolicy').value = currentSettings.referrerPolicy;
-            document.getElementById('settingReferrer').value = currentSettings.referrer === 'custom' ? 'custom' : currentSettings.referrer;
-            document.getElementById('settingReferrerCustom').value = currentSettings.referrer !== 'about:client' && currentSettings.referrer !== '' ? currentSettings.referrer : '';
-            document.getElementById('settingIntegrity').value = currentSettings.integrity;
-            document.getElementById('settingKeepalive').value = currentSettings.keepalive.toString();
+            byId('settingCache').value = currentSettings.cache;
+            byId('settingMode').value = currentSettings.mode;
+            byId('settingCredentials').value = currentSettings.credentials;
+            byId('settingRedirect').value = currentSettings.redirect;
+            byId('settingReferrerPolicy').value = currentSettings.referrerPolicy;
+            byId('settingReferrer').value = currentSettings.referrer === 'custom' ? 'custom' : currentSettings.referrer;
+            byId('settingReferrerCustom').value = currentSettings.referrer !== 'about:client' && currentSettings.referrer !== '' ? currentSettings.referrer : '';
+            byId('settingIntegrity').value = currentSettings.integrity;
+            byId('settingKeepalive').value = currentSettings.keepalive.toString();
             handleReferrerChange();
         }
 
@@ -3981,24 +4189,24 @@
          */
         function saveSettings() {
             const settings = {
-                default_protocol: document.getElementById('settingDefaultProtocol').value,
-                verify_ssl: document.getElementById('settingVerifySSL').value,
-                follow_redirect: document.getElementById('settingFollowRedirect').value,
-                timeout: document.getElementById('settingTimeout').value,
-                retry_count: document.getElementById('settingRetryCount').value,
-                retry_delay: document.getElementById('settingRetryDelay').value,
-                sse_event_types: document.getElementById('settingSseEventTypes').value,
+                default_protocol: byId('settingDefaultProtocol').value,
+                verify_ssl: byId('settingVerifySSL').value,
+                follow_redirect: byId('settingFollowRedirect').value,
+                timeout: byId('settingTimeout').value,
+                retry_count: byId('settingRetryCount').value,
+                retry_delay: byId('settingRetryDelay').value,
+                sse_event_types: byId('settingSseEventTypes').value,
 
-                cache: document.getElementById('settingCache').value,
-                mode: document.getElementById('settingMode').value,
-                credentials: document.getElementById('settingCredentials').value,
-                redirect: document.getElementById('settingRedirect').value,
-                referrerPolicy: document.getElementById('settingReferrerPolicy').value,
-                referrer: document.getElementById('settingReferrer').value === 'custom'
-                    ? document.getElementById('settingReferrerCustom').value
-                    : document.getElementById('settingReferrer').value,
-                integrity: document.getElementById('settingIntegrity').value,
-                keepalive: document.getElementById('settingKeepalive').value === 'true'
+                cache: byId('settingCache').value,
+                mode: byId('settingMode').value,
+                credentials: byId('settingCredentials').value,
+                redirect: byId('settingRedirect').value,
+                referrerPolicy: byId('settingReferrerPolicy').value,
+                referrer: byId('settingReferrer').value === 'custom'
+                    ? byId('settingReferrerCustom').value
+                    : byId('settingReferrer').value,
+                integrity: byId('settingIntegrity').value,
+                keepalive: byId('settingKeepalive').value === 'true'
             };
             StorageManager.set('requestSettings', settings);
             closeSettings();
@@ -4036,8 +4244,8 @@
          * 当Referrer选择为自定义时显示自定义输入框
          */
         function handleReferrerChange() {
-            const referrerSelect = document.getElementById('settingReferrer');
-            const customInput = document.getElementById('settingReferrerCustom');
+            const referrerSelect = byId('settingReferrer');
+            const customInput = byId('settingReferrerCustom');
             customInput.style.display = referrerSelect.value === 'custom' ? 'block' : 'none';
         }
 
@@ -4050,7 +4258,7 @@
             document.querySelectorAll('.panel-content').forEach(contentElement => contentElement.classList.remove('active'));
 
             const activeTab = document.querySelector(`.panel-tab[onclick="switchPanelTab('${tab}')"]`);
-            const activeContent = document.getElementById(`${tab}Panel`);
+            const activeContent = byId(`${tab}Panel`);
 
             activeTab.classList.add('active');
             activeContent.classList.add('active');
@@ -4208,7 +4416,7 @@
          */
         function updateApiCollectionSelect() {
             const collections = getApiCollections();
-            const select = document.getElementById('apiCollectionSelect');
+            const select = byId('apiCollectionSelect');
             select.innerHTML = collections.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
             // 选中当前集合
             let current = getCurrentCollectionName();
@@ -4225,7 +4433,7 @@
          * 当用户选择不同的接口集合时更新显示
          */
         function switchApiCollection() {
-            const select = document.getElementById('apiCollectionSelect');
+            const select = byId('apiCollectionSelect');
             setCurrentCollectionName(select.value);
             updateApisDisplay();
         }
@@ -4273,47 +4481,55 @@
          * 清空当前请求的所有内容，包括URL、请求头、请求体、响应等
          */
         function newRequest() {
+            // 设置按钮和标题
+            setRequestBtnAndTit("保存", undefined, '', 'none', 'none');
             // 清空URL
-            const urlInput = document.getElementById('url');
+            const urlInput = byId('url');
             if (urlInput) urlInput.value = '';
 
             // 清空请求头
-            const headersList = document.getElementById('headersList');
+            const headersList = byId('headersList');
             if (headersList) {
                 headersList.innerHTML = '';
                 addHeader();
             }
+            // 清空URL参数
+            const paramsList = byId('paramsList');
+            if (paramsList) {
+                paramsList.innerHTML = '';
+                addParam();
+            }
 
             // 清空多行请求体
-            const jsonBodyRows = document.getElementById('jsonBodyRows');
+            const jsonBodyRows = byId('jsonBodyRows');
             if (jsonBodyRows) {
                 jsonBodyRows.innerHTML = '';
             }
-            const textBodyRows = document.getElementById('textBodyRows');
+            const textBodyRows = byId('textBodyRows');
             if (textBodyRows) {
                 textBodyRows.innerHTML = '';
             }
-            const binaryBodyRows = document.getElementById('binaryBodyRows');
+            const binaryBodyRows = byId('binaryBodyRows');
             if (binaryBodyRows) {
                 binaryBodyRows.innerHTML = '';
             }
 
             // 清空form表单
-            const formRows = document.getElementById('formRows');
+            const formRows = byId('formRows');
             if (formRows) {
                 formRows.innerHTML = '';
                 addFormRow();
             }
 
             // 清空formdata
-            const formDataRows = document.getElementById('formDataRows');
+            const formDataRows = byId('formDataRows');
             if (formDataRows) {
                 formDataRows.innerHTML = '';
                 addFormDataRow();
             }
 
             // 清空WebSocket消息体
-            const wsBodyRows = document.getElementById('wsBodyRows');
+            const wsBodyRows = byId('wsBodyRows');
             if (wsBodyRows) {
                 wsBodyRows.innerHTML = '';
             }
@@ -4339,10 +4555,10 @@
          * @returns {void}
          */
         function formatJsonResponse() {
-            const responseBody = document.getElementById('responseBody');
-            const jsonFormattedContainer = document.getElementById('jsonFormattedContainer');
-            const formatJsonBtn = document.getElementById('formatJsonBtn');
-            const copyFormattedBtn = document.getElementById('copyFormattedBtn');
+            const responseBody = byId('responseBody');
+            const jsonFormattedContainer = byId('jsonFormattedContainer');
+            const formatJsonBtn = byId('formatJsonBtn');
+            const copyFormattedBtn = byId('copyFormattedBtn');
 
             if (!responseBody || !jsonFormattedContainer || !formatJsonBtn || !copyFormattedBtn) {
                 console.error('JSON格式化所需元素不存在');
@@ -4387,7 +4603,7 @@
                 return;
             }
 
-            const copyFormattedBtn = document.getElementById('copyFormattedBtn');
+            const copyFormattedBtn = byId('copyFormattedBtn');
 
             try {
                 await navigator.clipboard.writeText(formattedJson);
@@ -4413,7 +4629,7 @@
          * @param {any} data - 要渲染的JSON数据
          */
         function renderJsonWithDom(data) {
-            const jsonFormattedContainer = document.getElementById('jsonFormattedContainer');
+            const jsonFormattedContainer = byId('jsonFormattedContainer');
             jsonFormattedContainer.innerHTML = '';
             const container = document.createElement('div');
             container.className = 'json-formatted';
@@ -4589,9 +4805,9 @@
          * @returns {Promise<void>}
          */
         async function handleSSEFetchResponse(response) {
-            const responseInfo = document.getElementById('responseInfo');
-            const responseBody = document.getElementById('responseBody');
-            const responseHeadersTable = document.getElementById('responseHeaders')?.getElementsByTagName('tbody')[0];
+            const responseInfo = byId('responseInfo');
+            const responseBody = byId('responseBody');
+            const responseHeadersTable = byId('responseHeaders')?.getElementsByTagName('tbody')[0];
 
             if (responseInfo) responseInfo.innerHTML = 'SSE流式响应中...';
 
@@ -4702,7 +4918,7 @@
          * 在WebSocket消息体容器中添加一个新的消息体行，如果是第一行则自动选中
          */
         function addWsBodyRow() {
-            const container = document.getElementById('wsBodyRows');
+            const container = byId('wsBodyRows');
             const row = createWsBodyRow();
             container.appendChild(row);
             // 如果是第一行，自动选中
@@ -4718,7 +4934,7 @@
          */
         function removeWsBodyRow(btn) {
             const row = btn.closest('.body-row');
-            const container = document.getElementById('wsBodyRows');
+            const container = byId('wsBodyRows');
             const wasSelected = row.querySelector('input[type="radio"]').checked;
             row.remove();
             if (wasSelected && container.children.length > 0) {
