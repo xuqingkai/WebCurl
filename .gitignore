@@ -118,3 +118,9 @@ fabric.properties
 *.vsix
 
 WebCurl.log
+
+.vscode
+WebCurl
+WebCurl.*
+build
+
