@@ -139,6 +139,7 @@ WebCurl/
 ```bash
 # 编译
 go build -o WebCurl main.go
+# 也可以使用 sh build.sh 命令
 
 # 运行（默认 0.0.0.0:4444，内嵌前端页面）
 ./WebCurl
@@ -146,6 +147,8 @@ go build -o WebCurl main.go
 # 浏览器访问
 http://localhost:4444
 ```
+
+> **注** ：构建所有平台可执行文件，请使用 `sh build.sh all` 命令，构建完成后在build目录下查找对应平台可执行文件。
 
 ### 2️⃣ 命令行参数
 
