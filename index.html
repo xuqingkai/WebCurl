@@ -993,6 +993,36 @@
             padding: 8px 10px;
             font-size: 15px;
         }
+
+        .httpStatus1 {
+            /* 信息响应 */
+            background: linear-gradient(135deg, #64b5f6, #1e88e5);
+            color: #e3f2fd;
+        }
+
+        .httpStatus2 {
+            /* 成功 */
+            background: linear-gradient(135deg, #81c784, #43a047);
+            color: #e8f5e9;
+        }
+
+        .httpStatus3 {
+            /* 重定向 */
+            background: linear-gradient(135deg, #fff176, #fdd835);
+            color: #3e2723;
+        }
+
+        .httpStatus4 {
+            /* 客户端错误 */
+            background: linear-gradient(135deg, #ffb74d, #fb8c00);
+            color: #fff3e0;
+        }
+
+        .httpStatus5 {
+            /* 服务器错误 */
+            background: linear-gradient(135deg, #e57373, #d32f2f);
+            color: #ffebee;
+        }
     </style>
 </head>
 
@@ -1213,7 +1243,7 @@
                         <div class="response-tab" onclick="switchResponseTab('headers')">响应头</div>
                         <div class="response-tab active" onclick="switchResponseTab('body')">响应体</div>
                     </div>
-                    <div id="headersContent" class="response-tab-content active">
+                    <div id="headersContent" class="response-tab-content">
                         <table class="headers-table" id="responseHeaders">
                             <thead>
                                 <tr>
@@ -1224,7 +1254,7 @@
                             <tbody></tbody>
                         </table>
                     </div>
-                    <div id="bodyContent" class="response-tab-content">
+                    <div id="bodyContent" class="response-tab-content active">
                         <div class="response-actions">
                             <button onclick="copyResponse()">复制响应内容</button>
                             <button onclick="clearResponse()">清空响应内容</button>
@@ -2470,6 +2500,7 @@
                     文件大小: ${(blob.size / 1024).toFixed(2)} KB<br>
                     内容类型: ${contentType || '未指定'}<br>
                 `;
+                responseInfo.classList = 'response-info httpStatus' + (response.status + "").substr(0, 1);
             }
 
             if (responseBody) {
@@ -2495,6 +2526,7 @@
                     响应时间: ${duration}ms<br>
                     内容类型: ${contentType || '未指定'}<br>
                 `;
+                responseInfo.classList = 'response-info httpStatus' + (response.status + "").substr(0, 1);
             }
 
             // 重置JSON格式化状态
