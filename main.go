@@ -36,7 +36,6 @@ import (
 	"os/signal"
 	"path/filepath"
 	"reflect"
-	"regexp"
 	"runtime"
 	"strconv"
 	"strings"
@@ -475,41 +474,6 @@ func handleFavicon(w http.ResponseWriter, r *http.Request) {
 	_, _ = w.Write(data)
 }
 
-// 获取真实ip
-func getRealIP(r *http.Request) string {
-	// 1. 尝试从 X-Forwarded-For 头部获取
-	forwarded := r.Header.Get("X-Forwarded-For")
-	if forwarded != "" {
-		// X-Forwarded-For 可能包含多个 IP 地址，取第一个
-		ips := strings.Split(forwarded, ",")
-		// 循环遍历IP地址，移除空格并验证是否是有效的IP地址
-		for _, ip := range ips {
-			ip = strings.TrimSpace(ip)
-			if net.ParseIP(ip) != nil {
-				return ip
-			}
-		}
-	}
-
-	// 2. 尝试从 X-Real-IP 头部获取
-	realIP := r.Header.Get("X-Real-IP")
-	if realIP != "" {
-		if net.ParseIP(realIP) != nil {
-			return realIP
-		}
-	}
-
-	// 3. 如果以上两种方法都失败，则使用 RemoteAddr
-	ip, _, err := net.SplitHostPort(r.RemoteAddr)
-	if err != nil {
-		return r.RemoteAddr // 如果解析失败，返回原始 RemoteAddr
-	}
-	if net.ParseIP(ip) != nil {
-		return ip
-	}
-	return r.RemoteAddr
-}
-
 // handleForward 处理HTTP请求转发，支持多种请求体格式和文件上传
 func handleForward(w http.ResponseWriter, r *http.Request) {
 	// 只允许POST方法
@@ -538,19 +502,7 @@ func handleForward(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// 如果url是localhosl或127.0.0.1、0.0.0.0则替换为请求来源ip
-	// 定义正则表达式
-	re := regexp.MustCompile(`^(.*://)?(localhost|127\.0\.0\.1|0\.0\.0\.0)`)
-	// 使用正则表达式查找匹配项
-	match := re.FindStringSubmatch(forwardURL)
-
-	// 如果找到匹配项，则进行替换
-	if len(match) > 0 {
-		// 构造替换后的 URL
-		forwardURL = re.ReplaceAllString(forwardURL, match[1]+getRealIP(r))
-	}
-
-	logger.Info("转发目标URL", "url", forwardURL)
+	logger.Debug("转发目标URL", "url", forwardURL)
 	logger.Debug("Form参数", "form", r.Form)
 
 	// 获取SSL验证参数，默认启用
