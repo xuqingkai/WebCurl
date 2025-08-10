@@ -3,7 +3,7 @@
 ############################################
 FROM golang:1.24.4-alpine3.22 AS build-env
 WORKDIR /mnt
-COPY index.html favicon.ico main.go go.mod  go.sum /mnt/
+COPY index.html tool.html favicon.ico main.go go.mod README.md /mnt/
 RUN echo 'start build'
 RUN cd /mnt/ && export GO111MODULE=on && export GOPROXY=https://goproxy.cn && CGO_ENABLED=0 go build -o WebCurl
 
@@ -25,3 +25,4 @@ CMD [ "/usr/local/WebCurl/WebCurl" ]
 # start
 # docker run -d -p:4444:4444 --name webcurl  webcurl:2.2
 # docker run -d --name webcurl -p 4444:4444 -v /usr/share/nginx/html/:/usr/local/WebCurl/webroot webcurl:2.2 /usr/local/WebCurl/WebCurl --webroot=/usr/local/WebCurl/webroot
+
