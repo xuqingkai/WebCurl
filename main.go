@@ -1478,6 +1478,23 @@ func main() {
 		}
 	}()
 
+	//启动服务后自动打开浏览器
+	url := fmt.Sprintf("http://127.0.0.1:%s", *port)
+	if useSSL { url = fmt.Sprintf("https://127.0.0.1:%s", *port) }
+	if(runtime.GOOS == "windows"){
+		if err := exec.Command("cmd", "/c", "start", url).Start(); err != nil {
+			logger.Error("浏览器打开错误", "err", err)
+		}
+	}else if(runtime.GOOS == "linux"){
+		if err := exec.Command("xdg-open", url).Start(); err != nil {
+			logger.Error("浏览器打开错误", "err", err)
+		}
+	}else if(runtime.GOOS == "darwin"){
+		if err := exec.Command("open", url).Start(); err != nil {
+			logger.Error("浏览器打开错误", "err", err)
+		}
+	}
+
 	// 添加调试信息
 	fmt.Printf("\n程序启动完成，按 Ctrl+C 退出; OS:[ %s ]; PID:[ %d ];\n\n", runtime.GOOS, os.Getpid())
 	logger.Info(fmt.Sprintf("程序启动完成;OS:[ %s ]; PID:[ %d ];\n\n", runtime.GOOS, os.Getpid()))
