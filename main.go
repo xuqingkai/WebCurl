@@ -474,6 +474,16 @@ func handleFavicon(w http.ResponseWriter, r *http.Request) {
 	_, _ = w.Write(data)
 }
 
+// handleOSExit 关闭服务
+func handleOSExit(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Cache-Control", "public, max-age=86400")
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write([]byte("{}"))
+	time.Sleep(1 * time.Second)
+	os.Exit(0)
+}
+
 // handleForward 处理HTTP请求转发，支持多种请求体格式和文件上传
 func handleForward(w http.ResponseWriter, r *http.Request) {
 	// 只允许POST方法
@@ -1321,7 +1331,7 @@ func main() {
 	host := flag.String("host", "0.0.0.0", "监听地址")
 	port := flag.String("port", "4444", "监听端口")
 	webrootFlag := flag.String("webroot", "", "静态文件根目录(为空则用内嵌index.html)")
-	daemon := flag.Bool("daemon", false, "后台运行(Linux/MacOS/Windows均支持)")
+	daemon := flag.Bool("daemon", true, "后台运行(Linux/MacOS/Windows均支持)")
 	echoServer := flag.Bool("echo-server", true, "是否开启一个echoServer模拟Web服务器")
 	logLevelFlag := flag.String("log-level", "info", "日志级别: error, info, warn, debug")
 	logFileFlag := flag.String("log-file", "", "日志文件路径,未指定则在可执行文件同目录 WebCurl.log")
@@ -1430,6 +1440,7 @@ func main() {
 	http.HandleFunc("/api/mode", handleMode)              // 模式检测
 	http.HandleFunc("/api/forward-ws", handleForwardWS)   // WebSocket转发
 	http.HandleFunc("/api/forward-sse", handleForwardSSE) // SSE转发
+	http.HandleFunc("/api/exit", handleOSExit)            // 推出服务
 	http.HandleFunc("/api/test-panic", handleTestPanic)   // 测试panic恢复
 
 	if *echoServer {
