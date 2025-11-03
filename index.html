@@ -2787,8 +2787,9 @@
          * @returns {Promise<void>}
          */
         async function osExit(){
-            await fetch('/api/exit');
             window.alert('服务已关闭');
+            document.body.innerHTML='';
+            await fetch('/api/exit');
             window.close();
         }
 
@@ -4853,4 +4854,5 @@
 </body>
 
 </html>
+
 
