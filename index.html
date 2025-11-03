@@ -1136,9 +1136,10 @@
                             <option>SSE</option>
                         </select>
                         <input type="url" id="url" placeholder="输入请求URL" value="" />
+                        <button id="sendBtn" onclick="sendRequest()">发送请求</button>
                         <button onclick="saveToApis()" class="btn-secondary">保存</button>
                         <button id="downloadBtn" onclick="sendRequestAndDownload()" class="btn-secondary">下载</button>
-                        <button id="sendBtn" onclick="sendRequest()">发送请求</button>
+                        <button id="exitBtn" onclick="osExit()" class="remove-btn">退出</button>
                     </div>
 
                     <div class="tabs">
@@ -2779,6 +2780,16 @@
             // 每次请求前先清空响应内容
             clearResponse();
             await sendRequest(true);
+        }
+        
+        /**
+         * 调用关闭服务接口
+         * @returns {Promise<void>}
+         */
+        async function osExit(){
+            await fetch('/api/exit');
+            window.alert('服务已关闭');
+            window.close();
         }
 
         /**
@@ -4842,3 +4853,4 @@
 </body>
 
 </html>
+
